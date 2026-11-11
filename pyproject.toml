@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tritobol"
+version = "0.1.0"
+description = "Trim redundant prompt text and keep the newest context within a model-specific token budget."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "tritobol contributors" }]
+keywords = ["llm", "tokenizer", "prompt", "context", "preprocessing", "multi-model"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Text Processing",
+]
+dependencies = ["tokenizers>=0.19"]
+
+[project.scripts]
+tritobol = "tritobol.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tritobol*"]
+
+[tool.setuptools.package-data]
+tritobol = ["data/*.json", "data/*.md", "data/LICENSE*"]
