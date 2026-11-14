@@ -1,0 +1,9 @@
+{
+  "name": "tritobol-app-frontend-tests",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Dev-only test tooling for the Tritobol web UI. Not needed to run the app.",
+  "type": "module",
+  "scripts": { "test": "node --test" },
+  "devDependencies": { "jsdom": "^24.1.0" }
+}

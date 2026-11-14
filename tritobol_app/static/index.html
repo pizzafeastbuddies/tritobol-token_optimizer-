@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="tritobol-token" content="__TRITOBOL_TOKEN__">
+  <title>Tritobol — token optimizer</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="stylesheet" href="/static/css/tritobol.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="shell">
+  <header class="rail">
+    <a class="brand" href="#/dashboard" aria-label="Tritobol home">
+      <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 17c3-5 8-5 10-8" stroke="#8fb573" stroke-width="4" fill="none" stroke-linecap="round"/><ellipse cx="32" cy="38" rx="21" ry="17" fill="#cc5500"/><path d="M32 22v32M20 24c-5 8-5 20 0 28M44 24c5 8 5 20 0 28" stroke="#8f3a00" stroke-width="2.5" fill="none"/><path d="M22 34l5 6h-9zM42 34l5 6h-9z" fill="#ffd27a"/><path d="M23 47l3-3 3 3 3-3 3 3 3-3 3 3" stroke="#ffd27a" stroke-width="2.5" fill="none" stroke-linejoin="round"/></svg>
+      <span class="brand-name">Tritobol</span>
+    </a>
+    <nav aria-label="Main" class="nav">
+      <a href="#/dashboard" data-route="dashboard">Dashboard</a>
+      <a href="#/optimize" data-route="optimize">Optimizer</a>
+      <a href="#/analytics" data-route="analytics">Analytics</a>
+      <a href="#/privacy" data-route="privacy">Privacy</a>
+      <a href="#/settings" data-route="settings">Settings</a>
+    </nav>
+    <p class="rail-note">Runs on this computer.<br>No text is sent anywhere.</p>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <noscript><p class="banner banner-error">Tritobol needs JavaScript enabled in your browser.</p></noscript>
+    <div id="app-alert" class="banner banner-error" role="alert" hidden></div>
+
+    <!-- ============ Dashboard ============ -->
+    <section id="view-dashboard" data-view="dashboard" aria-labelledby="h-dash">
+      <div class="hero">
+        <div class="hero-copy">
+          <h1 id="h-dash">Trim the prompt.<br>Bolster the context.</h1>
+          <p class="lede">Tritobol removes repeated and low-value text from prompts with fixed rules — no summarising, no rewriting — counts tokens with the tokenizer you choose, and can keep only the newest context inside a token budget.</p>
+          <div class="actions">
+            <a class="btn btn-primary" id="dash-start" href="#/optimize">Optimize text</a>
+            <a class="btn btn-ghost" href="#/privacy">How privacy works</a>
+          </div>
+        </div>
+        <figure class="lantern" aria-live="polite">
+          <svg viewBox="0 0 200 180" aria-hidden="true" class="lantern-svg">
+            <path d="M100 38c8-14 22-14 30-24" stroke="#8fb573" stroke-width="9" fill="none" stroke-linecap="round"/>
+            <ellipse cx="100" cy="106" rx="84" ry="64" fill="#b84a00"/>
+            <path d="M100 44v124M58 52c-26 28-26 80 0 108M142 52c26 28 26 80 0 108" stroke="#7d3200" stroke-width="5" fill="none"/>
+            <path d="M58 92l16 22H42zM142 92l16 22h-32z" fill="#ffd27a"/>
+            <path d="M62 138l9-10 9 10 9-10 10 10 10-10 9 10 9-10 9 10" stroke="#ffd27a" stroke-width="7" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+          </svg>
+          <figcaption id="dash-hero-stat"><span class="lantern-label">No run yet this session</span></figcaption>
+        </figure>
+      </div>
+
+      <div class="grid-3">
+        <article class="card"><h2>What it does</h2><p>Drops decorative separators, repeated paragraphs, lines and sentences, invisible characters and HTML comments. Fenced Python and JSON are only changed if the result still parses.</p></article>
+        <article class="card"><h2>What a budget does</h2><p>If you set a token budget and the trimmed text is still too long, the <strong>oldest</strong> tokens are discarded and the newest kept. That is truncation, not summarising — and you are always told when it happens.</p></article>
+        <article class="card"><h2>Engine</h2><div id="dash-engine"><p class="muted">Checking tokenizer…</p></div></article>
+      </div>
+
+      <div class="grid-2">
+        <article class="card"><h2>This session</h2><div id="dash-session"><p class="muted">Run an optimization to see real totals here.</p></div></article>
+        <article class="card"><h2>Recent optimizations</h2><div id="dash-activity"><p class="muted">Nothing yet. Only numbers are remembered, never your text.</p></div></article>
+      </div>
+    </section>
+
+    <!-- ============ Optimizer ============ -->
+    <section id="view-optimize" data-view="optimize" aria-labelledby="h-opt" hidden>
+      <h1 id="h-opt">Prompt optimizer</h1>
+      <div class="optimizer">
+        <div class="card editor-card">
+          <div class="toolbar">
+            <label for="input-text" class="field-label">Your text</label>
+            <div class="toolbar-actions">
+              <button type="button" class="btn btn-small" id="btn-load">Load text file</button>
+              <button type="button" class="btn btn-small btn-quiet" id="btn-clear">Clear</button>
+              <input type="file" id="file-input" hidden accept=".txt,.md,.markdown,.rst,.adoc,.log,.csv,.json,.yaml,.yml,.py,.toml,.ini,.xml,.html,text/*">
+            </div>
+          </div>
+          <textarea id="input-text" spellcheck="false" placeholder="Paste a prompt, notes or a document here — or load a UTF-8 text file." aria-describedby="char-count input-error"></textarea>
+          <div class="meter-row">
+            <span id="char-count" class="muted">0 characters</span>
+            <span id="size-meter" class="muted">0 B of 2 MB</span>
+          </div>
+          <p id="file-info" class="muted" hidden></p>
+          <p id="input-error" class="field-error" role="alert" hidden></p>
+        </div>
+
+        <div class="card options-card">
+          <h2>Options</h2>
+          <div class="field">
+            <label for="opt-tokenizer" class="field-label">Tokenizer</label>
+            <select id="opt-tokenizer"></select>
+            <p id="tok-status" class="hint"></p>
+            <button type="button" class="btn btn-small btn-quiet" id="btn-tok-upload">Use my own tokenizer.json…</button>
+            <input type="file" id="tok-file" hidden accept=".json,application/json">
+          </div>
+          <div class="field">
+            <label for="opt-budget" class="field-label">Token budget <span class="muted">(optional)</span></label>
+            <input id="opt-budget" type="text" inputmode="numeric" autocomplete="off" placeholder="No budget" aria-describedby="budget-hint budget-error">
+            <p id="budget-hint" class="hint">If the trimmed text is still longer, the oldest tokens are discarded and the newest kept.</p>
+            <p id="budget-error" class="field-error" role="alert" hidden></p>
+          </div>
+          <div class="field">
+            <label for="opt-task" class="field-label">Strategy</label>
+            <select id="opt-task">
+              <option value="auto">Auto-detect (code vs. prose)</option>
+              <option value="document">Document (shorter duplicates removed)</option>
+              <option value="coding">Coding (more conservative)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="opt-sensitive" class="field-label">Credential-looking values</label>
+            <select id="opt-sensitive" aria-describedby="sens-hint">
+              <option value="skip">Leave untouched (skip)</option>
+              <option value="mask">Replace with [REDACTED]</option>
+              <option value="off">Do not scan</option>
+            </select>
+            <p id="sens-hint" class="hint">Pattern-based and incomplete. “Leave untouched” keeps them in the output.</p>
+          </div>
+          <label class="check"><input type="checkbox" id="opt-protect" checked> Protect fenced code blocks</label>
+          <div class="run-row">
+            <button type="button" class="btn btn-primary btn-wide" id="btn-optimize">Optimize</button>
+            <button type="button" class="btn btn-ghost" id="btn-cancel" hidden>Cancel</button>
+          </div>
+          <p id="run-status" class="muted" role="status" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <section id="results" class="results" aria-labelledby="h-res" hidden>
+        <h2 id="h-res">Result</h2>
+        <div id="result-banner"></div>
+        <div id="result-tiles" class="tiles"></div>
+        <p class="fineprint">Token counts are for the supplied text with the selected tokenizer. They do not include chat templates, message framing or provider/API overhead.</p>
+        <div class="tabs" role="tablist" aria-label="Result views">
+          <button role="tab" id="tab-compare" aria-controls="panel-compare" aria-selected="true">Compare</button>
+          <button role="tab" id="tab-diff" aria-controls="panel-diff" aria-selected="false" tabindex="-1">Diff</button>
+          <button role="tab" id="tab-details" aria-controls="panel-details" aria-selected="false" tabindex="-1">Details</button>
+        </div>
+        <div id="panel-compare" role="tabpanel" aria-labelledby="tab-compare"></div>
+        <div id="panel-diff" role="tabpanel" aria-labelledby="tab-diff" hidden></div>
+        <div id="panel-details" role="tabpanel" aria-labelledby="tab-details" hidden></div>
+
+        <div class="card export-card" id="export-bar">
+          <h3>Export optimized text</h3>
+          <div class="export-grid">
+            <div class="field"><label for="export-name" class="field-label">File name</label><input id="export-name" type="text" value="optimized.txt"></div>
+            <div class="field"><label for="export-dir" class="field-label">Folder <span class="muted">(optional)</span></label><input id="export-dir" type="text" placeholder="Default: tritobol_exports next to where the app was started"></div>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn btn-primary" id="btn-download">Download</button>
+            <button type="button" class="btn" id="btn-save-copy">Save a new file in the folder</button>
+            <button type="button" class="btn btn-quiet" id="btn-copy">Copy text</button>
+          </div>
+          <p class="hint">Exports always create a new file. If the name exists, a numbered name is used; nothing is overwritten, and your original is never touched.</p>
+          <p id="export-status" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+    </section>
+
+    <!-- ============ Analytics ============ -->
+    <section id="view-analytics" data-view="analytics" aria-labelledby="h-ana" hidden>
+      <h1 id="h-ana">Token analytics</h1>
+      <div id="analytics-empty" class="card empty"><p>No optimization has been run in this session yet.</p><a class="btn btn-primary" href="#/optimize">Go to the optimizer</a></div>
+      <div id="analytics-body" hidden></div>
+    </section>
+
+    <!-- ============ Privacy ============ -->
+    <section id="view-privacy" data-view="privacy" aria-labelledby="h-priv" hidden>
+      <h1 id="h-priv">Privacy and security</h1>
+      <div class="grid-2">
+        <article class="card"><h2>Where processing happens</h2><p>On this computer. The optimizer is a Python program running next to this page; the server listens on <code>127.0.0.1</code> only and rejects requests addressed to any other host. Tokenizers run locally; the DeepSeek tokenizer is bundled with the app.</p></article>
+        <article class="card"><h2>Is anything transmitted?</h2><p>Tritobol makes no outbound network requests: no analytics, no web fonts, no CDN scripts, no model APIs. Your text goes from this page to the local server and back. <span id="privacy-live" class="muted"></span></p></article>
+        <article class="card"><h2>What is stored</h2><p>The server keeps nothing: text is processed in memory and is not logged. Your browser stores your settings and the numbers from recent runs (token counts, never text) — you can erase them in Settings. A file is written only when you press an export button, and always as a new file.</p></article>
+        <article class="card"><h2>Uploaded tokenizers</h2><p>A <code>tokenizer.json</code> you upload is size-limited, validated by loading it, kept in memory only, and any temporary file is deleted straight away. Up to three are kept until the app stops.</p></article>
+      </div>
+      <article class="card card-warn">
+        <h2>Limits of sensitive-data detection</h2>
+        <p>Tritobol looks for credential-shaped text using fixed patterns: well-known key prefixes for about a dozen providers (for example <code>sk-</code>, <code>ghp_</code>, <code>github_pat_</code>, <code>AKIA</code>, <code>AIza</code>, <code>hf_</code>) followed by a long run of key characters; assignments such as <code>password = …</code> or <code>api_key: …</code> with a value of 12+ characters; PEM private-key blocks; and <code>CONFIDENTIAL:</code>, <code>INTERNAL ONLY:</code> or <code>DO NOT DISTRIBUTE:</code> lines and <code>BEGIN/END CONFIDENTIAL</code> blocks.</p>
+        <p><strong>This is not complete secret detection.</strong> Secrets in other formats, short values, secrets written in prose, personal data and anything not matching those patterns will not be found. In “Leave untouched” mode, found values stay in the optimized text; “Replace with [REDACTED]” masks only what was found. Always review text yourself before sharing it.</p>
+      </article>
+    </section>
+
+    <!-- ============ Settings ============ -->
+    <section id="view-settings" data-view="settings" aria-labelledby="h-set" hidden>
+      <h1 id="h-set">Settings</h1>
+      <div class="card settings-card">
+        <p class="muted">These are the defaults the optimizer starts with. They are saved in this browser only.</p>
+        <div class="field"><label for="set-tokenizer" class="field-label">Default tokenizer</label><select id="set-tokenizer"></select></div>
+        <div class="field"><label for="set-budget" class="field-label">Default token budget</label><input id="set-budget" type="text" inputmode="numeric" placeholder="No budget"><p id="set-budget-error" class="field-error" role="alert" hidden></p></div>
+        <div class="field"><label for="set-task" class="field-label">Strategy</label><select id="set-task"><option value="auto">Auto-detect</option><option value="document">Document</option><option value="coding">Coding</option></select></div>
+        <div class="field"><label for="set-sensitive" class="field-label">Credential-looking values</label><select id="set-sensitive"><option value="skip">Leave untouched (skip)</option><option value="mask">Replace with [REDACTED]</option><option value="off">Do not scan</option></select></div>
+        <label class="check"><input type="checkbox" id="set-protect"> Protect fenced code blocks</label>
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="btn-save-settings">Save settings</button>
+          <button type="button" class="btn" id="btn-reset-settings">Reset to defaults</button>
+          <button type="button" class="btn btn-quiet" id="btn-clear-history">Erase run history</button>
+        </div>
+        <p id="set-status" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+  </main>
+</div>
+<script type="module" src="/static/js/app.js"></script>
+</body>
+</html>

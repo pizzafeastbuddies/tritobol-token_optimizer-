@@ -1,3 +1,4 @@
+
 """Command-line interface for tritobol.
 
 Examples
@@ -11,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import io
 import json
 import sys
 from dataclasses import asdict
@@ -109,9 +111,26 @@ def _guided_workflow() -> int:
         return 1
 
 
+def _read_stdin_text() -> str:
+    """Read piped/redirected stdin as UTF-8, like input files and the reconfigured stdout/stderr.
+
+    Without this, stdin is decoded with the platform code page (for example cp1252 on Windows), which turns
+    UTF-8 text such as an emoji into several wrong characters. Interactive (TTY) input and stdin objects
+    without a binary buffer keep the previous behaviour; newline handling matches the old text-mode read.
+    """
+    buffer = getattr(sys.stdin, "buffer", None)
+    if buffer is None or sys.stdin.isatty():
+        return sys.stdin.read()
+    wrapper = io.TextIOWrapper(buffer, encoding="utf-8", newline=None)
+    try:
+        return wrapper.read()
+    finally:
+        wrapper.detach()
+
+
 def _read_input(path: Optional[str]) -> str:
     if path is None or path == "-":
-        return sys.stdin.read()
+        return _read_stdin_text()
     return Path(path).read_text(encoding="utf-8")
 
 
@@ -208,7 +227,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Optional[list[str]] = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
+        # Keep redirected/piped output as UTF-8 with LF line endings on Windows.
+        sys.stdout.reconfigure(encoding="utf-8", newline="\n")
     if hasattr(sys.stderr, "reconfigure"):
         sys.stderr.reconfigure(encoding="utf-8")
 
@@ -354,7 +374,5 @@ def main(argv: Optional[list[str]] = None) -> int:
         if result.text and not result.text.endswith("\n"):
             sys.stdout.write("\n")
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

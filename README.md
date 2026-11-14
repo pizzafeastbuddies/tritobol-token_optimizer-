@@ -419,3 +419,8 @@ Please click [project_overview](PROJECT_OVERVIEW.md) for analyses & details.
 
 The tritobol source is MIT licensed. The bundled tokenizer retains DeepSeek's
 MIT license notice.
+
+## Web application (local UI)
+
+A local-first browser interface lives in `tritobol_app/`. On Windows, double-click `start.bat` (needs Python 3.10+).
+Everything runs on your computer; the optimizer engine above is unchanged. See [`docs/APPLICATION.md`](docs/APPLICATION.md).
