@@ -46,6 +46,6 @@ export function renderAnalytics() {
   body.append(grid);
   const hist = state.history, t = sessionTotals(hist);
   body.append(h('div', { class: 'card', style: 'margin-top:1rem' }, h('h3', {}, 'Runs in this browser'),
-    hist.length >= 2 ? historyChart(hist) : h('p', { class: 'muted' }, 'Run at least two optimizations to see a trend. Only numbers are stored, never text.'),
+    hist.length >= 2 ? historyChart(hist) : h('p', { class: 'muted' }, 'Run at least two optimizations to see a trend. Prompt text is stored only when you choose Save to history.'),
     h('p', {}, `${t.runs} run(s) · ${formatInt(t.original)} → ${formatInt(t.optimized)} tokens · ${formatPercent(t.percent)} overall`)));
 }

@@ -107,7 +107,8 @@ Default export folder: `tritobol_exports\` in the folder where the app was start
 - Binds to **127.0.0.1** only (not configurable); rejects any `Host` that is not localhost; POSTs need a per-run random
   token and reject cross-site `Origin`. CSP `default-src 'self'`; no CDN, fonts or analytics; **no outbound requests**
   (asserted in browser tests).
-- The server stores nothing and logs no request bodies. The browser stores settings and numeric run history (never text).
+- The server stores nothing and logs no request bodies. The browser stores settings and numeric run statistics; original and optimized prompt text is stored only after the user explicitly saves and confirms in Prompt history.
+- Saved prompt text remains in versioned local storage for this browser profile and app address only. It is not encrypted by Tritobol and is not synced to other devices. Users can review, restore, copy, delete individual entries, or clear all saved prompt history. The history is capped at 10 entries and 50,000 combined original/result characters per entry.
 - Limits: 2 MB input (UTF-8 bytes), 25 MB tokenizer file.
 - **Secret detection is pattern-based and incomplete.** It looks for key prefixes of about a dozen providers, `password`/`api_key`-style
   assignments with 12+ character values, PEM private-key blocks and `CONFIDENTIAL:`-style lines. It misses other formats,

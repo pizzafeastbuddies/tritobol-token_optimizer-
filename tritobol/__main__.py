@@ -26,9 +26,14 @@ from .tokenizer import HuggingFaceTokenizer
 
 def _guided_workflow() -> int:
     """Run a local, confirmation-based workflow for one UTF-8 text file."""
-    print("Tritobol guided mode (text files only; processing stays on this machine).")
+    print("Tritobol guided mode")
+    print("This tool removes repeated text; it does not summarize or rewrite your prompt.")
+    print("Your file is processed on this machine and is never changed in place.")
     try:
-        source_value = input("Text file path (or blank to cancel): ").strip()
+        source_value = input(
+            "\nStep 1/3 - Path to a UTF-8 text file with your prompt "
+            "(press Enter to cancel): "
+        ).strip()
         if not source_value:
             print("Cancelled.")
             return 0
@@ -38,31 +43,40 @@ def _guided_workflow() -> int:
             print(f"tritobol: error: not a file: {source}", file=sys.stderr)
             return 1
         text = source.read_text(encoding="utf-8")
+        if not text.strip():
+            print(
+                "tritobol: error: the file is empty. Add prompt text and try again.",
+                file=sys.stderr,
+            )
+            return 1
 
-        budget_value = input(
-            "Optional maximum token budget (may discard oldest text; Enter to skip): "
-        ).strip()
-        if budget_value:
+        while True:
+            budget_value = input(
+                "\nStep 2/3 - Optional maximum token budget "
+                "(Enter for no limit; a limit may discard the oldest text): "
+            ).strip()
+            if not budget_value:
+                max_tokens = None
+                break
             try:
                 max_tokens = int(budget_value)
             except ValueError:
                 print(
-                    "tritobol: error: token budget must be a positive integer.",
+                    "Please enter a whole number greater than zero, or press Enter for no limit.",
                     file=sys.stderr,
                 )
-                return 1
-            if max_tokens <= 0:
+                continue
+            if max_tokens < 1:
                 print(
-                    "tritobol: error: token budget must be a positive integer.",
+                    "Please enter a whole number greater than zero, or press Enter for no limit.",
                     file=sys.stderr,
                 )
-                return 1
-        else:
-            max_tokens = None
+                continue
+            break
 
         result = Tritobol().optimize(text, max_tokens=max_tokens)
         print(
-            f"\nTokens: {result.stats.original_tokens:,} -> "
+            f"\nStep 3/3 - Review results\nTokens: {result.stats.original_tokens:,} -> "
             f"{result.stats.optimized_tokens:,} "
             f"({result.stats.saved_tokens:,} saved, "
             f"{result.stats.saved_percent:.1f}%)."
@@ -79,7 +93,8 @@ def _guided_workflow() -> int:
 
         default_output = source.with_name(f"{source.stem}.optimized{source.suffix}")
         output_value = input(
-            f"Save to a separate file [{default_output}]: "
+            f"\nSave to a separate file (press Enter to use the suggested path) "
+            f"[{default_output}]: "
         ).strip()
         destination = Path(output_value).expanduser() if output_value else default_output
         destination = destination.resolve()

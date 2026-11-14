@@ -13,7 +13,8 @@ Browser (vanilla ES modules, no build)  --JSON-->  Flask (tritobol_app)  --impor
 | `tritobol_app/diffing.py` | diff from original vs actual output (difflib), with size guard |
 | `tritobol_app/export.py` | create-new-only export with filename sanitising |
 | `tritobol_app/files.py` | strict UTF-8 file decoding |
-| `static/js/lib.js` | pure helpers (formatting, validation, history, diff view-model) |
+| `static/js/lib.js` | pure helpers (formatting, validation, numeric run history, versioned saved-prompt schema, diff view-model) |
+| `static/js/prompt-history.js` | explicit local saved-prompt review, restore, copy, delete and clear UI |
 
 ## API
 - `GET /api/health`, `GET /api/tokenizers`, `POST /api/tokenizers/upload`
@@ -30,3 +31,4 @@ Browser (vanilla ES modules, no build)  --JSON-->  Flask (tritobol_app)  --impor
 - Diff uses difflib with `autojunk` (same default as the CLI `--diff`) plus a 5 s cooperative time limit and a 60,000-line cap; otherwise it reports "Diff skipped".
 - Engine: `tail()` raises `BudgetTooSmallError` (a ValueError) instead of IndexError for budgets smaller than one character's tokens.
 - Security: Host/Origin checks, per-run token on POSTs, CSP `default-src 'self'`.
+- Prompt text history is a separate, versioned `localStorage` key. It is written only after the user selects "Save to history" and confirms; no account or cloud service is involved. Keep at most 10 entries and at most 50,000 combined original/result characters per entry. Treat storage as unencrypted and origin/profile scoped.

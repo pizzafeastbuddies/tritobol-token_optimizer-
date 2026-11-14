@@ -14,6 +14,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PYTHON = process.env.TRITOBOL_PYTHON || 'python';
 let server, baseUrl, dom, tmp;
 let fetchCalls = [];
+let copiedText = '';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const $ = (id) => dom.window.document.getElementById(id);
@@ -47,7 +48,7 @@ before(async () => {
   dom = new JSDOM(html, { url: `${baseUrl}/`, pretendToBeVisual: true });
   const w = dom.window;
   Object.assign(globalThis, { window: w, document: w.document, location: w.location, localStorage: w.localStorage, Event: w.Event, KeyboardEvent: w.KeyboardEvent });
-  Object.defineProperty(globalThis, 'navigator', { value: { clipboard: { writeText: async () => {} } }, configurable: true });
+  Object.defineProperty(globalThis, 'navigator', { value: { clipboard: { writeText: async (text) => { copiedText = text; } } }, configurable: true });
   globalThis.TRITOBOL_BASE_URL = baseUrl;
   const realFetch = globalThis.fetch;
   globalThis.fetch = (...a) => { fetchCalls.push(String(a[0])); return realFetch(...a); };
@@ -56,7 +57,15 @@ before(async () => {
   await import('../tritobol_app/static/js/app.js');
   await until(() => $('opt-tokenizer').options.length > 0);
 });
-after(() => { server?.kill(); fs.rmSync(tmp, { recursive: true, force: true }); dom?.window.close(); });
+after(async () => {
+  if (server && server.exitCode === null) {
+    const exited = new Promise((resolve) => server.once('exit', resolve));
+    server.kill();
+    await exited;
+  }
+  fs.rmSync(tmp, { recursive: true, force: true });
+  dom?.window.close();
+});
 
 const DOC = 'Please review the release notes.\n\nPlease review the release notes.\n\n==========\n\nVersion 2.0 removes /v1/export.   Migrate.\nVersion 2.0 removes /v1/export.\nFinal instruction: answer in three bullets.\n';
 
@@ -237,7 +246,7 @@ test('privacy page states local processing and detection limits', async () => {
   assert.match(t, /127\.0\.0\.1/); assert.match(t, /not complete secret detection/); assert.match(t, /no outbound network requests/);
 });
 
-test('settings persist, validate, reset; history stores numbers only', async () => {
+test('settings persist, validate, reset; automatic run history stores numbers only', async () => {
   await go('settings');
   $('set-task').value = 'coding'; $('set-sensitive').value = 'mask'; typeInto('set-budget', '77');
   $('btn-save-settings').click();
@@ -252,6 +261,90 @@ test('settings persist, validate, reset; history stores numbers only', async () 
   assert.equal(localStorage.getItem('tritobol.settings.v1'), null); assert.equal($('opt-task').value, 'auto');
   $('btn-clear-history').click();
   assert.equal(localStorage.getItem('tritobol.history.v1'), null);
+});
+
+test('prompt text is saved only by explicit opt-in and can be reviewed, opened, copied, deleted, and cleared locally', async () => {
+  const promptKey = 'tritobol.prompt-history.v1';
+  localStorage.removeItem(promptKey);
+  await optimizeNow(DOC);
+  assert.equal(localStorage.getItem(promptKey), null); // a successful run never stores prompt text automatically
+  const callsBeforeSave = fetchCalls.length;
+  $('btn-save-history').click();
+  assert.equal($('history-save-confirmation').hidden, false);
+  assert.match($('history-save-confirmation').textContent, /not encrypted by Tritobol/);
+  assert.match($('history-save-confirmation').textContent, /not synced/);
+  assert.equal($('history-save-confirm').disabled, true);
+  $('history-save-consent').checked = true;
+  $('history-save-consent').dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+  $('history-save-confirm').click();
+  let saved = JSON.parse(localStorage.getItem(promptKey));
+  assert.equal(saved.version, 1);
+  assert.equal(saved.entries.length, 1);
+  assert.equal(saved.entries[0].original_text, DOC);
+  assert.equal(saved.entries[0].optimized_text, $('panel-compare').querySelectorAll('pre')[1].textContent);
+  assert.equal(fetchCalls.length, callsBeforeSave); // saving uses browser storage, not a server/API request
+  assert.match($('history-save-status').textContent, /not synced to other devices/);
+
+  await go('prompt-history');
+  assert.match($('prompt-history-list').textContent, /Original prompt/);
+  assert.equal($('prompt-history-list').querySelectorAll('.prompt-history-card').length, 1);
+  const review = $('prompt-history-list').querySelector('details');
+  assert.match(review.textContent, /Original prompt/);
+  assert.match(review.textContent, /Optimized result/);
+  $('prompt-history-list').querySelector('button').click(); // open original in optimizer
+  assert.equal($('input-text').value, DOC);
+  assert.equal($('results').hidden, true);
+
+  await go('prompt-history');
+  copiedText = '';
+  $('prompt-history-list').querySelectorAll('button')[1].click(); // copy optimized
+  await until(() => copiedText.length > 0);
+  assert.equal(copiedText, saved.entries[0].optimized_text);
+  dom.window.confirm = () => true;
+  $('prompt-history-list').querySelectorAll('button')[2].click(); // delete one
+  assert.equal(JSON.parse(localStorage.getItem(promptKey)).entries.length, 0);
+
+  await optimizeNow(DOC);
+  $('btn-save-history').click();
+  $('history-save-consent').checked = true;
+  $('history-save-consent').dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+  $('history-save-confirm').click();
+  assert.equal(JSON.parse(localStorage.getItem(promptKey)).entries.length, 1);
+  await go('prompt-history');
+  $('btn-clear-prompt-history').click();
+  assert.equal(localStorage.getItem(promptKey), null);
+  assert.match($('prompt-history-list').textContent, /No prompts saved yet/);
+  await go('optimize');
+  $('btn-save-history').click();
+  assert.equal($('history-save-confirmation').hidden, false); // a cleared result can be explicitly saved again
+  $('history-save-cancel').click();
+});
+
+test('prompt history reports browser storage quota errors without claiming a save', async () => {
+  const promptKey = 'tritobol.prompt-history.v1';
+  localStorage.removeItem(promptKey);
+  await optimizeNow(DOC);
+  const storagePrototype = Object.getPrototypeOf(localStorage);
+  const originalSetItem = storagePrototype.setItem;
+  Object.defineProperty(storagePrototype, 'setItem', {
+    configurable: true,
+    writable: true,
+    value(key, value) {
+      if (key === promptKey) throw new DOMException('quota exceeded', 'QuotaExceededError');
+      return originalSetItem.call(this, key, value);
+    },
+  });
+  try {
+    $('btn-save-history').click();
+    $('history-save-consent').checked = true;
+    $('history-save-consent').dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+    $('history-save-confirm').click();
+    assert.match($('history-save-status').textContent, /storage may be full or disabled/);
+    assert.equal(localStorage.getItem(promptKey), null);
+    assert.equal($('btn-save-history').disabled, false);
+  } finally {
+    Object.defineProperty(storagePrototype, 'setItem', { configurable: true, writable: true, value: originalSetItem });
+  }
 });
 
 test('custom tokenizer upload: invalid rejected with a message, nothing added', async () => {

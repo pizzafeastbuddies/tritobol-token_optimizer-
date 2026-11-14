@@ -3,6 +3,10 @@
 export const MAX_INPUT_BYTES = 2 * 1024 * 1024;
 export const MAX_BUDGET = 100_000_000;
 export const HISTORY_LIMIT = 10;
+export const PROMPT_HISTORY_VERSION = 1;
+export const PROMPT_HISTORY_LIMIT = 10;
+export const PROMPT_HISTORY_MAX_TEXT_CHARS = 50_000;
+export const PROMPT_HISTORY_MAX_STORAGE_CHARS = 1_000_000;
 export const DEFAULT_SETTINGS = Object.freeze({
   tokenizer: 'deepseek-v4.1-flash', budget: '', task_type: 'auto', sensitive_data: 'skip', protect_code_blocks: true,
 });
@@ -96,7 +100,7 @@ export function downloadFilename(sourceName) {
   return `${stem}.optimized${ext}`;
 }
 
-// ---- session history (numbers only, never text) -------------------------------------------------
+// ---- automatic numeric run history; prompt text has a separate explicit opt-in store ------------
 export function buildHistoryEntry(result, nowIso) {
   const s = result.stats;
   return { at: nowIso, tokenizer: result.tokenizer.label, original_tokens: s.original_tokens, optimized_tokens: s.optimized_tokens,
@@ -111,6 +115,78 @@ export function sanitizeHistory(value) {
     .map((e) => ({ at: e.at, tokenizer: e.tokenizer.slice(0, 80), original_tokens: e.original_tokens, optimized_tokens: e.optimized_tokens,
       saved_tokens: e.saved_tokens, saved_percent: e.saved_percent, truncated: !!e.truncated, budget: num(e.budget) ? e.budget : null }));
 }
+
+function validPromptHistoryEntry(entry) {
+  const isInt = (value) => Number.isSafeInteger(value);
+  const validBudget = entry?.budget === null || (isInt(entry?.budget) && entry.budget >= 1);
+  return entry && typeof entry === 'object' && !Array.isArray(entry) &&
+    typeof entry.id === 'string' && entry.id.length > 0 && entry.id.length <= 100 &&
+    typeof entry.at === 'string' && Number.isFinite(Date.parse(entry.at)) &&
+    typeof entry.source_name === 'string' && entry.source_name.length <= 256 &&
+    typeof entry.original_text === 'string' && typeof entry.optimized_text === 'string' &&
+    codePointLength(entry.original_text) + codePointLength(entry.optimized_text) <= PROMPT_HISTORY_MAX_TEXT_CHARS &&
+    typeof entry.tokenizer === 'string' && entry.tokenizer.length > 0 && entry.tokenizer.length <= 100 &&
+    isInt(entry.original_tokens) && entry.original_tokens >= 0 &&
+    isInt(entry.optimized_tokens) && entry.optimized_tokens >= 0 &&
+    isInt(entry.saved_tokens) &&
+    typeof entry.saved_percent === 'number' && Number.isFinite(entry.saved_percent) &&
+    typeof entry.truncated === 'boolean' &&
+    isInt(entry.discarded_tokens) && entry.discarded_tokens >= 0 &&
+    validBudget &&
+    (entry.warning === null || (typeof entry.warning === 'string' && entry.warning.length <= 2000));
+}
+
+export function buildPromptHistoryEntry(result, sourceText, sourceName, at, id) {
+  const stats = result?.stats;
+  const entry = {
+    id,
+    at,
+    source_name: String(sourceName || 'Pasted text').slice(0, 256),
+    original_text: sourceText,
+    optimized_text: result?.text,
+    tokenizer: result?.tokenizer?.label,
+    original_tokens: stats?.original_tokens,
+    optimized_tokens: stats?.optimized_tokens,
+    saved_tokens: stats?.saved_tokens,
+    saved_percent: stats?.saved_percent,
+    truncated: !!stats?.truncated,
+    discarded_tokens: stats?.discarded_tokens,
+    budget: result?.budget?.requested ?? null,
+    warning: result?.warning ?? null,
+  };
+  if (!validPromptHistoryEntry(entry)) {
+    throw new RangeError(`Saved prompt history requires a complete result with at most ${formatInt(PROMPT_HISTORY_MAX_TEXT_CHARS)} combined text characters.`);
+  }
+  return entry;
+}
+
+export function sanitizePromptHistory(value) {
+  if (value === null || value === undefined) return { ok: true, entries: [] };
+  if (!value || typeof value !== 'object' || Array.isArray(value) || value.version !== PROMPT_HISTORY_VERSION) {
+    return { ok: false, entries: [], error: 'Saved prompt history has an unsupported version or format. Clear it to start a new history.' };
+  }
+  if (!Array.isArray(value.entries)) {
+    return { ok: false, entries: [], error: 'Saved prompt history is damaged. Clear it to start a new history.' };
+  }
+  const entries = value.entries.slice(0, PROMPT_HISTORY_LIMIT);
+  if (entries.some((entry) => !validPromptHistoryEntry(entry))) {
+    return { ok: false, entries: [], error: 'Saved prompt history contains invalid data. Clear it to start a new history.' };
+  }
+  return { ok: true, entries };
+}
+
+export function parsePromptHistory(raw) {
+  if (raw === null || raw === undefined) return { ok: true, entries: [] };
+  if (typeof raw !== 'string' || raw.length > PROMPT_HISTORY_MAX_STORAGE_CHARS) {
+    return { ok: false, entries: [], error: 'Saved prompt history is too large or unreadable. Clear it to start a new history.' };
+  }
+  try {
+    return sanitizePromptHistory(JSON.parse(raw));
+  } catch {
+    return { ok: false, entries: [], error: 'Saved prompt history is unreadable. Clear it to start a new history.' };
+  }
+}
+
 export function sessionTotals(history) {
   const original = history.reduce((a, e) => a + e.original_tokens, 0);
   const optimized = history.reduce((a, e) => a + e.optimized_tokens, 0);

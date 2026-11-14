@@ -4,10 +4,11 @@ import { renderDashboard } from './dashboard.js';
 import { $ } from './dom.js';
 import { applySettingsToForm, initEditor, populateTokenizers } from './editor.js';
 import { initResults } from './results.js';
+import { initPromptHistory, renderPromptHistory } from './prompt-history.js';
 import { initSettings, renderSettings } from './settings.js';
 import { state, subscribe } from './store.js';
 
-const VIEWS = ['dashboard', 'optimize', 'analytics', 'privacy', 'settings'];
+const VIEWS = ['dashboard', 'optimize', 'analytics', 'prompt-history', 'privacy', 'settings'];
 
 function route() {
   const name = (location.hash.replace(/^#\/?/, '') || 'dashboard');
@@ -15,14 +16,15 @@ function route() {
   document.querySelectorAll('[data-view]').forEach((el) => { el.hidden = el.dataset.view !== view; });
   document.querySelectorAll('[data-route]').forEach((a) => { if (a.dataset.route === view) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   if (view === 'analytics') renderAnalytics();
+  if (view === 'prompt-history') renderPromptHistory();
   if (view === 'dashboard') renderDashboard();
   if (view === 'settings') renderSettings();
   document.title = `Tritobol — ${view === 'optimize' ? 'optimizer' : view}`;
 }
 
 async function boot() {
-  initEditor(); initResults(); initSettings(() => { applySettingsToForm(); renderDashboard(); });
-  subscribe(() => { renderDashboard(); });
+  initEditor(); initResults(); initPromptHistory(); initSettings(() => { applySettingsToForm(); renderDashboard(); });
+  subscribe(() => { renderDashboard(); if (location.hash === '#/prompt-history') renderPromptHistory(); });
   applySettingsToForm();
   window.addEventListener('hashchange', route);
   route();

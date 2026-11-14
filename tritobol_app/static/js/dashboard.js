@@ -17,7 +17,7 @@ export function renderDashboard() {
   else ses.append(h('dl', { class: 'stat-list' }, h('dt', {}, 'Runs'), h('dd', {}, formatInt(t.runs)), h('dt', {}, 'Original tokens'), h('dd', {}, formatInt(t.original)),
     h('dt', {}, 'Optimized tokens'), h('dd', {}, formatInt(t.optimized)), h('dt', {}, 'Tokens saved'), h('dd', {}, formatInt(t.saved)), h('dt', {}, 'Overall reduction'), h('dd', {}, formatPercent(t.percent))));
   const act = clear($('dash-activity'));
-  if (!hist.length) act.append(h('p', { class: 'muted' }, 'Nothing yet. Only numbers are remembered, never your text.'));
+  if (!hist.length) act.append(h('p', { class: 'muted' }, 'Nothing yet. Run statistics are automatic; prompt text is saved only when you choose Save to history.'));
   else act.append(h('ul', { class: 'activity' }, hist.slice(0, 6).map((e) => h('li', {},
     h('span', {}, `${formatInt(e.original_tokens)} → ${formatInt(e.optimized_tokens)} tokens (${formatPercent(e.saved_percent)})${e.truncated ? ' · budget cut' : ''}`),
     h('span', { class: 'when' }, new Date(e.at).toLocaleString())))));

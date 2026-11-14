@@ -20,6 +20,7 @@
       <a href="#/dashboard" data-route="dashboard">Dashboard</a>
       <a href="#/optimize" data-route="optimize">Optimizer</a>
       <a href="#/analytics" data-route="analytics">Analytics</a>
+      <a href="#/prompt-history" data-route="prompt-history">Prompt history</a>
       <a href="#/privacy" data-route="privacy">Privacy</a>
       <a href="#/settings" data-route="settings">Settings</a>
     </nav>
@@ -61,7 +62,7 @@
 
       <div class="grid-2">
         <article class="card"><h2>This session</h2><div id="dash-session"><p class="muted">Run an optimization to see real totals here.</p></div></article>
-        <article class="card"><h2>Recent optimizations</h2><div id="dash-activity"><p class="muted">Nothing yet. Only numbers are remembered, never your text.</p></div></article>
+        <article class="card"><h2>Recent optimizations</h2><div id="dash-activity"><p class="muted">Nothing yet. Run statistics are automatic; prompt text is saved only when you choose Save to history.</p></div></article>
       </div>
     </section>
 
@@ -143,6 +144,22 @@
         <div id="panel-diff" role="tabpanel" aria-labelledby="tab-diff" hidden></div>
         <div id="panel-details" role="tabpanel" aria-labelledby="tab-details" hidden></div>
 
+        <div class="card prompt-history-optin">
+          <h3>Save this result for later</h3>
+          <p class="hint">Nothing is saved automatically. Choose Save to history, then confirm to store the original prompt and optimized result in this browser only. They are not synced to your phone or other devices.</p>
+          <button type="button" class="btn" id="btn-save-history">Save to history</button>
+          <div id="history-save-confirmation" class="prompt-history-consent" hidden>
+            <p class="card-warn">Saved text stays in this browser profile's local storage at this app address. It is not synced to your phone or other devices and is not encrypted by Tritobol. Anyone who can use this browser profile may be able to read it. Do not save prompts containing secrets or text you do not want stored here.</p>
+            <p class="hint">The original and optimized text are both stored. The entry is limited to 50,000 combined characters; the history keeps at most 10 entries.</p>
+            <label class="check"><input type="checkbox" id="history-save-consent"> I understand and want to save these texts on this browser.</label>
+            <div class="actions">
+              <button type="button" class="btn btn-primary" id="history-save-confirm" disabled>Save prompt locally</button>
+              <button type="button" class="btn btn-quiet" id="history-save-cancel">Cancel</button>
+            </div>
+          </div>
+          <p id="history-save-status" class="muted" role="status" aria-live="polite"></p>
+        </div>
+
         <div class="card export-card" id="export-bar">
           <h3>Export optimized text</h3>
           <div class="export-grid">
@@ -160,6 +177,22 @@
       </section>
     </section>
 
+    <!-- ============ Explicitly saved prompt history ============ -->
+    <section id="view-prompt-history" data-view="prompt-history" aria-labelledby="h-prompt-history" hidden>
+      <h1 id="h-prompt-history">Saved prompt history</h1>
+      <div class="banner banner-info">
+        <h3>Only saved when you choose</h3>
+        <p>Successful runs do not save prompt text automatically. This list is stored in this browser profile on this device and app address; it does not sync to your phone or other devices. It is not encrypted by Tritobol. Avoid saving secrets or sensitive text, and clear entries you no longer want retained.</p>
+        <p id="prompt-history-limit" class="fineprint"></p>
+      </div>
+      <div id="prompt-history-error" class="banner banner-error" role="alert" hidden></div>
+      <div class="actions">
+        <button type="button" class="btn btn-quiet" id="btn-clear-prompt-history" disabled>Clear saved prompt history</button>
+      </div>
+      <p id="prompt-history-status" role="status" aria-live="polite"></p>
+      <div id="prompt-history-list" class="prompt-history-list"></div>
+    </section>
+
     <!-- ============ Analytics ============ -->
     <section id="view-analytics" data-view="analytics" aria-labelledby="h-ana" hidden>
       <h1 id="h-ana">Token analytics</h1>
@@ -173,7 +206,7 @@
       <div class="grid-2">
         <article class="card"><h2>Where processing happens</h2><p>On this computer. The optimizer is a Python program running next to this page; the server listens on <code>127.0.0.1</code> only and rejects requests addressed to any other host. Tokenizers run locally; the DeepSeek tokenizer is bundled with the app.</p></article>
         <article class="card"><h2>Is anything transmitted?</h2><p>Tritobol makes no outbound network requests: no analytics, no web fonts, no CDN scripts, no model APIs. Your text goes from this page to the local server and back. <span id="privacy-live" class="muted"></span></p></article>
-        <article class="card"><h2>What is stored</h2><p>The server keeps nothing: text is processed in memory and is not logged. Your browser stores your settings and the numbers from recent runs (token counts, never text) — you can erase them in Settings. A file is written only when you press an export button, and always as a new file.</p></article>
+        <article class="card"><h2>What is stored</h2><p>The server keeps nothing: text is processed in memory and is not logged. Your browser stores settings and numeric run statistics automatically. The original prompt and optimized result are stored only if you choose “Save to history” and confirm; that text is kept in this browser profile's local storage at this app address, is not encrypted by Tritobol, and is not synced to other devices. Clear saved prompts in Prompt history or erase run statistics in Settings. A file is written only when you press an export button, and always as a new file.</p></article>
         <article class="card"><h2>Uploaded tokenizers</h2><p>A <code>tokenizer.json</code> you upload is size-limited, validated by loading it, kept in memory only, and any temporary file is deleted straight away. Up to three are kept until the app stops.</p></article>
       </div>
       <article class="card card-warn">

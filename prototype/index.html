@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="A static, unintegrated browser prototype for the Tritobol prompt optimizer."
+    >
+    <title>Tritobol — Keep the signal</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Tritobol prototype home">
+          <span class="brand-mark" aria-hidden="true">t.</span>
+          <span>tritobol</span>
+        </a>
+        <span class="prototype-tag"><span aria-hidden="true"></span> Static prototype</span>
+      </header>
+
+      <main>
+        <section class="intro" aria-labelledby="page-title">
+          <div class="intro-copy">
+            <p class="eyebrow"><span aria-hidden="true">✦</span> A little less noise</p>
+            <h1 id="page-title">Keep the signal.<br><span>Lose the repetition.</span></h1>
+            <p class="intro-text">
+              A first look at a calmer way to clean up long prompts. The Tritobol
+              optimizer is not connected yet, so this prototype will never invent
+              token counts or results.
+            </p>
+          </div>
+          <aside class="theme-note" aria-label="Proposed visual direction">
+            <span class="theme-icon" aria-hidden="true">✳</span>
+            <span>
+              <span class="theme-label">Visual direction · proposed</span>
+              <strong>Costume Contest</strong>
+              <span class="theme-caption">A seasonal accent, not a confirmed category.</span>
+            </span>
+          </aside>
+        </section>
+
+        <div class="prototype-note" role="note">
+          <span class="note-icon" aria-hidden="true">i</span>
+          <p>
+            <strong>Prototype only.</strong> Text stays in this page, but optimization,
+            tokenizer loading, and export are not wired to Tritobol yet.
+          </p>
+        </div>
+
+        <section class="workspace" aria-label="Prompt optimization prototype">
+          <section class="panel input-panel" aria-labelledby="input-heading">
+            <div class="panel-heading">
+              <div>
+                <p class="step-label">01 <span>·</span> YOUR INPUT</p>
+                <h2 id="input-heading">Start with your text</h2>
+              </div>
+              <span class="local-chip"><span aria-hidden="true">●</span> Your draft</span>
+            </div>
+
+            <div class="text-field-wrap">
+              <label class="sr-only" for="source-text">Text to optimize</label>
+              <textarea
+                id="source-text"
+                name="source-text"
+                rows="12"
+                spellcheck="false"
+                placeholder="Paste a prompt or notes here. Your original stays untouched."
+                aria-describedby="input-help character-count"
+              ></textarea>
+              <div class="textarea-footer">
+                <p id="input-help">Paste text or open a UTF-8 .txt file. Nothing is saved automatically.</p>
+                <span id="character-count" aria-live="polite">0 characters</span>
+              </div>
+            </div>
+
+            <div class="input-actions">
+              <label class="button button-secondary file-button" for="text-file">
+                <span aria-hidden="true">↥</span> Open text file
+              </label>
+              <input id="text-file" class="sr-only" type="file" accept=".txt,text/plain">
+              <span class="format-hint">UTF-8 · .txt</span>
+            </div>
+
+            <div class="settings">
+              <div class="field-group">
+                <label for="tokenizer">Tokenizer</label>
+                <select id="tokenizer" name="tokenizer" aria-describedby="tokenizer-help">
+                  <option value="bundled">DeepSeek V4.1 Flash · bundled</option>
+                  <option value="custom">Use a local tokenizer.json…</option>
+                </select>
+                <p class="field-help" id="tokenizer-help">Counts supplied text only; provider request overhead is not included.</p>
+                <div id="custom-tokenizer" class="custom-tokenizer" hidden>
+                  <label class="button button-secondary compact-button" for="tokenizer-file">Choose tokenizer file</label>
+                  <input id="tokenizer-file" class="sr-only" type="file" accept=".json,application/json">
+                  <span id="tokenizer-file-name" class="file-name">No file selected</span>
+                  <p class="field-help">Selection only — compatibility checking is not wired in this prototype.</p>
+                </div>
+              </div>
+              <div class="field-group budget-group">
+                <label for="token-budget">Token budget <span class="optional">(optional)</span></label>
+                <input
+                  id="token-budget"
+                  name="token-budget"
+                  type="number"
+                  min="1"
+                  step="1"
+                  inputmode="numeric"
+                  placeholder="No limit"
+                  aria-describedby="budget-help"
+                >
+                <p class="field-help" id="budget-help">If needed, the real optimizer keeps the newest context.</p>
+              </div>
+            </div>
+
+            <div class="run-row">
+              <button id="optimize-button" class="button button-primary" type="button" disabled>
+                <span aria-hidden="true">✦</span> Optimize text
+              </button>
+              <p class="run-caption">No changes are made to your source file.</p>
+            </div>
+            <p id="app-status" class="status-message" role="status" aria-live="polite" hidden></p>
+          </section>
+
+          <section class="panel result-panel" aria-labelledby="result-heading" aria-busy="false">
+            <div class="panel-heading result-heading">
+              <div>
+                <p class="step-label">02 <span>·</span> YOUR RESULT</p>
+                <h2 id="result-heading">Review before export</h2>
+              </div>
+              <span class="waiting-pill"><span aria-hidden="true">◷</span> Waiting for optimizer</span>
+            </div>
+
+            <div class="stats" aria-label="Token statistics">
+              <div class="stat-card">
+                <span>Original</span>
+                <strong aria-label="Not available">—</strong>
+                <small>tokens</small>
+              </div>
+              <div class="stat-card">
+                <span>Optimized</span>
+                <strong aria-label="Not available">—</strong>
+                <small>tokens</small>
+              </div>
+              <div class="stat-card stat-saved">
+                <span>Saved</span>
+                <strong aria-label="Not available">—</strong>
+                <small>not calculated</small>
+              </div>
+            </div>
+
+            <div class="result-preview" aria-live="polite">
+              <div class="preview-toolbar">
+                <span><span class="live-dot" aria-hidden="true"></span> Optimized text</span>
+                <span class="preview-label">No result yet</span>
+              </div>
+              <div id="result-text" class="result-text">
+                <span class="empty-spark" aria-hidden="true">✧</span>
+                <p>Your optimized text will appear here<br>after the core is connected.</p>
+              </div>
+            </div>
+
+            <div class="diff-preview">
+              <div class="diff-heading">
+                <span>Change preview</span>
+                <span class="preview-label">Not generated</span>
+              </div>
+              <p id="diff-text">A side-by-side diff will make every change easy to review.</p>
+            </div>
+
+            <div id="truncation-note" class="truncation-note" role="note" hidden>
+              <span aria-hidden="true">!</span>
+              <p><strong>Example warning — not a real result.</strong> If a hard budget is exceeded, the optimizer may discard the earliest text to keep the newest context. An actual warning and discarded-token count require integration.</p>
+            </div>
+
+            <div class="export-row">
+              <div>
+                <strong>Keep your original safe</strong>
+                <span>Export will create a separate file after review.</span>
+              </div>
+              <button class="button button-export" type="button" disabled aria-describedby="export-help">
+                Export result <span aria-hidden="true">↗</span>
+              </button>
+            </div>
+            <p id="export-help" class="sr-only">Export is unavailable until the optimizer is connected.</p>
+
+            <div class="demo-row">
+              <button id="demo-button" class="text-button" type="button" aria-expanded="false" aria-controls="demo-state">
+                Show sample screen state <span aria-hidden="true">→</span>
+              </button>
+              <span>Illustrative only · no generated counts</span>
+            </div>
+            <div id="demo-state" class="demo-state" hidden>
+              <span class="demo-badge">SAMPLE STATE · NOT PROCESSED</span>
+              <p>This panel demonstrates where a truncation warning will appear. It is not the output of Tritobol.</p>
+            </div>
+          </section>
+        </section>
+        <footer class="page-footer">
+          <span>Built around Tritobol · local-first Python toolkit</span>
+          <span>App integration pending</span>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>

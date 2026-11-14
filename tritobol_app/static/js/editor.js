@@ -46,6 +46,15 @@ export function applySettingsToForm() {
   populateTokenizers();
 }
 
+export function openHistoryPrompt(text) {
+  loadedName = null;
+  $('input-text').value = text;
+  $('input-text').dispatchEvent(new Event('input', { bubbles: true }));
+  $('results').hidden = true;
+  $('run-status').textContent = 'Saved original prompt loaded. Run Optimize to create a fresh result.';
+  $('run-status').className = 'muted';
+}
+
 async function loadFile(file) {
   setError('input-error', '');
   $('file-info').hidden = true;
@@ -108,7 +117,7 @@ export async function runOptimize() {
 
 export function initEditor() {
   const ta = $('input-text');
-  ta.addEventListener('input', () => { setError('input-error', ''); ta.removeAttribute('aria-invalid'); updateCounts(); });
+  ta.addEventListener('input', () => { loadedName = null; setError('input-error', ''); ta.removeAttribute('aria-invalid'); updateCounts(); });
   $('btn-load').addEventListener('click', () => $('file-input').click());
   $('file-input').addEventListener('change', async (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) await loadFile(f); });
   $('btn-clear').addEventListener('click', () => { ta.value = ''; loadedName = null; $('file-info').hidden = true; setError('input-error', ''); updateCounts(); ta.focus(); });
