@@ -24,12 +24,18 @@ classifiers = [
 ]
 dependencies = ["tokenizers>=0.19"]
 
+[project.optional-dependencies]
+app = ["flask>=3.0"]
+dev = ["pytest>=7", "hypothesis>=6"]
+
 [project.scripts]
 tritobol = "tritobol.__main__:main"
+tritobol-app = "tritobol_app.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["tritobol*"]
+include = ["tritobol*", "tritobol_app*"]
 
 [tool.setuptools.package-data]
 tritobol = ["data/*.json", "data/*.md", "data/LICENSE*"]
+tritobol_app = ["static/*.html", "static/*.svg", "static/css/*.css", "static/js/*.js"]

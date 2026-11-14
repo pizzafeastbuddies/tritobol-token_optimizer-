@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Run app tests on backend change",
+  "description": "When a Python file in tritobol_app or tests_app is saved, run the backend test suite and report failures.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["tritobol_app/**/*.py", "tests_app/**/*.py"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A backend file changed. Run `python -m pytest tests tests_app -q` and summarise real results. Do not claim success without running it."
+  }
+}
