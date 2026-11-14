@@ -99,6 +99,55 @@ class CliGuidedWorkflowTests(unittest.TestCase):
             self.assertIn("Cancelled; no output file was written.", stdout.getvalue())
             self.assertEqual(list(Path(temporary).iterdir()), [input_path])
 
+    def test_guided_flow_reprompts_for_invalid_budget(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            input_path = Path(temporary) / "prompt.txt"
+            text = "A valid prompt.\n"
+            input_path.write_text(text, encoding="utf-8")
+            answers = iter([str(input_path), "many", "0", "", "", "n"])
+            prompts = []
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+            optimizer = Mock(return_value=Tritobol().optimize(text))
+
+            def answer(prompt: str) -> str:
+                prompts.append(prompt)
+                return next(answers)
+
+            with patch("builtins.input", side_effect=answer), \
+                patch(
+                    "tritobol.__main__.Tritobol",
+                    return_value=SimpleNamespace(optimize=optimizer),
+                ), \
+                redirect_stdout(stdout), redirect_stderr(stderr):
+                status = main(["--interactive"])
+
+            self.assertEqual(status, 0)
+            self.assertEqual(stderr.getvalue().count("whole number greater than zero"), 2)
+            optimizer.assert_called_once_with(text, max_tokens=None)
+            self.assertIn("Step 1/3", prompts[0])
+            self.assertIn("Step 2/3", prompts[1])
+            self.assertIn("Step 2/3", prompts[2])
+            self.assertIn("Step 3/3", stdout.getvalue())
+            self.assertIn("Cancelled; no output file was written.", stdout.getvalue())
+
+    def test_guided_flow_rejects_empty_file_before_optimization(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            input_path = Path(temporary) / "empty.txt"
+            input_path.write_text(" \n\t", encoding="utf-8")
+            stdout = io.StringIO()
+            stderr = io.StringIO()
+
+            with patch("builtins.input", return_value=str(input_path)), \
+                patch("tritobol.__main__.Tritobol") as tritobol, \
+                redirect_stdout(stdout), redirect_stderr(stderr):
+                status = main(["--interactive"])
+
+            self.assertEqual(status, 1)
+            self.assertIn("file is empty", stderr.getvalue())
+            tritobol.assert_not_called()
+            self.assertEqual(list(Path(temporary).iterdir()), [input_path])
+
     def test_guided_flow_refuses_source_or_existing_output(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             input_path = Path(temporary) / "prompt.txt"

@@ -101,6 +101,26 @@ test('history keeps numbers only, is capped and survives corrupt storage', () =>
   assert.equal(L.sessionTotals([]).percent, 0);
 });
 
+test('prompt history is versioned, bounded, and validates every saved text field', () => {
+  const promptResult = { ...result(), text: 'optimized prompt' };
+  const entry = L.buildPromptHistoryEntry(promptResult, 'original prompt', 'prompt.txt', '2026-01-01T00:00:00.000Z', 'entry-1');
+  assert.equal(entry.original_text, 'original prompt');
+  assert.equal(entry.optimized_text, 'optimized prompt');
+  const stored = JSON.stringify({ version: L.PROMPT_HISTORY_VERSION, entries: [entry] });
+  assert.deepEqual(L.parsePromptHistory(stored), { ok: true, entries: [entry] });
+  assert.deepEqual(L.parsePromptHistory(null), { ok: true, entries: [] });
+  assert.equal(L.parsePromptHistory('{broken').ok, false);
+  assert.equal(L.parsePromptHistory(JSON.stringify({ version: 99, entries: [entry] })).ok, false);
+  assert.equal(L.parsePromptHistory(JSON.stringify({ version: 1, entries: [{ ...entry, optimized_text: 7 }] })).ok, false);
+  assert.equal(L.parsePromptHistory('x'.repeat(L.PROMPT_HISTORY_MAX_STORAGE_CHARS + 1)).ok, false);
+  assert.throws(() => L.buildPromptHistoryEntry(
+    promptResult, 'x'.repeat(L.PROMPT_HISTORY_MAX_TEXT_CHARS), 'too-long.txt', '2026-01-01T00:00:00.000Z', 'entry-2',
+  ), /combined text characters/);
+  assert.equal(L.sanitizePromptHistory({
+    version: 1, entries: Array.from({ length: L.PROMPT_HISTORY_LIMIT + 2 }, (_, i) => ({ ...entry, id: `entry-${i}` })),
+  }).entries.length, L.PROMPT_HISTORY_LIMIT);
+});
+
 test('sanitizeSettings falls back safely', () => {
   assert.deepEqual(L.sanitizeSettings(null), L.DEFAULT_SETTINGS);
   const s = L.sanitizeSettings({ tokenizer: 'x', budget: 'abc', task_type: 'evil', sensitive_data: 'mask', protect_code_blocks: 'yes' });

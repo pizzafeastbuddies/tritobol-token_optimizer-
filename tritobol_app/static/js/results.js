@@ -4,7 +4,7 @@ import { renderDiff } from './diffview.js';
 import {
   clipForDisplay, codePointLength, downloadFilename, formatInt, formatPercent, savingsSummary, sensitiveSummary, truncationSummary,
 } from './lib.js';
-import { state } from './store.js';
+import { savePromptToHistory, state } from './store.js';
 
 const TABS = ['compare', 'diff', 'details'];
 let shown = null;
@@ -89,12 +89,60 @@ export function renderResult(result, sourceText, sourceName) {
   clear($('panel-details')).append(details(result));
   $('export-name').value = downloadFilename(sourceName);
   clear($('export-status'));
+  $('history-save-consent').checked = false;
+  $('history-save-confirm').disabled = true;
+  $('history-save-confirmation').hidden = true;
+  $('history-save-status').textContent = state.promptHistoryError
+    ? 'Saved prompt history is unavailable. Open Prompt history to review or clear its stored data.'
+    : '';
+  $('history-save-status').className = state.promptHistoryError ? 'err-text' : 'muted';
+  $('btn-save-history').disabled = false;
+  $('btn-save-history').textContent = 'Save to history';
   selectTab('compare');
 }
 
 function status(msg, ok) { const el = $('export-status'); el.textContent = msg; el.className = ok ? 'ok-text' : 'err-text'; }
 
 export function initResults() {
+  $('btn-save-history').addEventListener('click', () => {
+    if (!shown) return;
+    if (state.promptHistoryError) {
+      $('history-save-status').textContent = `${state.promptHistoryError} Open Prompt history to clear it before saving.`;
+      $('history-save-status').className = 'err-text';
+      return;
+    }
+    if (state.currentPromptHistoryId) {
+      $('history-save-status').textContent = 'This result is already saved in Prompt history.';
+      $('history-save-status').className = 'ok-text';
+      return;
+    }
+    $('history-save-confirmation').hidden = false;
+    $('history-save-consent').checked = false;
+    $('history-save-confirm').disabled = true;
+    $('history-save-consent').focus();
+  });
+  $('history-save-consent').addEventListener('change', () => {
+    $('history-save-confirm').disabled = !$('history-save-consent').checked;
+  });
+  $('history-save-cancel').addEventListener('click', () => {
+    $('history-save-confirmation').hidden = true;
+    $('history-save-consent').checked = false;
+    $('history-save-status').textContent = 'Nothing was saved.';
+    $('history-save-status').className = 'muted';
+    $('btn-save-history').focus();
+  });
+  $('history-save-confirm').addEventListener('click', () => {
+    if (!$('history-save-consent').checked) return;
+    const outcome = savePromptToHistory();
+    $('history-save-status').textContent = outcome.ok
+      ? 'Saved on this browser. It is not synced to other devices.'
+      : outcome.error;
+    $('history-save-status').className = outcome.ok ? 'ok-text' : 'err-text';
+    if (outcome.ok) {
+      $('history-save-confirmation').hidden = true;
+      $('btn-save-history').textContent = 'Saved to history';
+    }
+  });
   TABS.forEach((t, i) => {
     $(`tab-${t}`).addEventListener('click', () => selectTab(t));
     $(`tab-${t}`).addEventListener('keydown', (e) => {

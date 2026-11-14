@@ -64,3 +64,13 @@ a browser UI, a diff view, analytics and safe export. No text leaves the user's 
 ### R10 — Compatibility and delivery
 1. Existing CLI behaviour and existing tests SHALL remain unchanged and passing.
 2. The app SHALL start via `start.bat` on Windows. Windows compatibility SHALL be reported as verified only after verification on Windows.
+
+### R11 — User-controlled local prompt history
+1. The application SHALL provide no accounts, OAuth, remote prompt-history service, or cloud sync.
+2. A successful optimization SHALL NOT persist either prompt text automatically. Text SHALL be saved only after the user activates "Save to history" and confirms the local-storage disclosure.
+3. Each saved item SHALL contain the original prompt, optimized result, timestamp, source label, tokenizer and relevant token/budget statistics, so the user can review it later.
+4. The user SHALL be able to review, restore the original into the optimizer, copy the saved result, delete one item, and clear all saved prompt history.
+5. Saved prompt text SHALL be stored only in versioned, schema-validated browser local storage, scoped to this browser profile and app address; it SHALL NOT be sent to the server or another device.
+6. Before saving, the UI SHALL explain that text is not encrypted by Tritobol, may be visible to others with access to the browser profile, is not synced, and should not include secrets or text the user does not want retained.
+7. The UI SHALL show clear empty, unsupported/corrupt-data, unavailable-storage, quota/write-failure and size-limit states. It SHALL not claim a save when persistence fails.
+8. Retention SHALL be bounded to 10 entries and 50,000 combined original/result characters per entry. When saving an eleventh item, the oldest saved entry SHALL be removed; a too-large item SHALL be rejected without truncation.

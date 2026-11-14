@@ -34,12 +34,18 @@ python -m pip install -e .
 tritobol
 ```
 
+If the `tritobol` command is not recognized, start the same guide with
+`python -m tritobol` from the project folder.
+
 The guide asks for one UTF-8 text file, optionally asks for a maximum token
 budget, and shows token counts plus a unified diff before saving. A budget may
 discard the oldest text when the optimized result is still too long; a blank
 budget keeps the normal no-hard-limit behavior. The suggested output is a
 separate `*.optimized.*` file; Tritobol never overwrites the source and will
 not replace an existing output. Saving requires an explicit confirmation.
+The prompts are numbered: enter the text-file path, optionally enter a budget
+(or press Enter for no limit), review the token counts and diff, then press
+Enter to use the suggested output path and type `yes` to save.
 Press Enter at the file prompt or use Ctrl+C/Ctrl+D (Ctrl+Z then Enter on
 Windows) to cancel. The same flow can be started with `tritobol --interactive`.
 When stdin is redirected, no-argument invocation continues to read the piped
@@ -423,4 +429,4 @@ MIT license notice.
 ## Web application (local UI)
 
 A local-first browser interface lives in `tritobol_app/`. On Windows, double-click `start.bat` (needs Python 3.10+).
-Everything runs on your computer; the optimizer engine above is unchanged. See [`docs/APPLICATION.md`](docs/APPLICATION.md).
+Everything runs on your computer; the optimizer engine above is unchanged. Prompt text is saved in browser-local history only when you choose **Save to history** and confirm; it is not encrypted by Tritobol or synced to other devices. See [`docs/APPLICATION.md`](docs/APPLICATION.md).
