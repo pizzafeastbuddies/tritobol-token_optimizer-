@@ -4,7 +4,7 @@
 ![Multi-model compatible](https://img.shields.io/badge/Tokenizer-Multi--model%20compatible-6C5CE7)
 ![CLI app](https://img.shields.io/badge/Interface-CLI%20app-2D3436)
 ![Token and prompt optimizer](https://img.shields.io/badge/Tool-Token%20%26%20prompt%20optimizer-00B894)
-![Build for the Future 2026 Hackathon](https://img.shields.io/badge/Build%20for%20the%20Future-2026%20Hackathon-F39C12)
+![Kiroween 2026 Hackathon](https://img.shields.io/badge/Kiroween%202026%20Hackathon-F39C12)
 ![Built with heart while learning](https://img.shields.io/badge/Built%20with%20heart-While%20learning-E84393)
 
 **trim + token + bolster** — a lightweight Python token preprocessor that removes
