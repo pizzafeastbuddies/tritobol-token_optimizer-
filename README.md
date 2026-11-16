@@ -428,5 +428,32 @@ MIT license notice.
 
 ## Web application (local UI)
 
-A local-first browser interface lives in `tritobol_app/`. On Windows, double-click `start.bat` (needs Python 3.10+).
-Everything runs on your computer; the optimizer engine above is unchanged. Prompt text is saved in browser-local history only when you choose **Save to history** and confirm; it is not encrypted by Tritobol or synced to other devices. See [`docs/APPLICATION.md`](docs/APPLICATION.md).
+A local-first browser interface lives in `tritobol_app/`. On Windows, double-click
+`start.bat` to launch it (Python 3.10+ required). The first launch creates a
+private `.venv` and installs Flask and `tokenizers`, so it may need an internet
+connection once. The app then opens in your browser and runs on this computer;
+the running app makes no outbound network requests.
+
+The web UI includes:
+
+- **Dashboard:** tokenizer availability and recent run totals.
+- **Optimizer:** paste text or load a UTF-8 text file (up to 2 MB), choose the
+  bundled tokenizer or upload a local `tokenizer.json`, and set an optional
+  token budget, cleanup strategy, code-block protection, and credential-pattern
+  handling.
+- **Results:** compare original and optimized text, inspect a diff and cleanup
+  details, and review token counts and any budget-truncation warnings. A token
+  budget keeps the newest context; it does not summarize the text. Copy,
+  download, or save the optimized result as a new file without overwriting the
+  original.
+- **Analytics, Settings, and Privacy:** inspect run statistics, configure
+  browser-local defaults, and review how processing and storage work.
+- **Prompt history:** optionally save both the original and optimized text
+  after choosing **Save to history** and confirming. Nothing saves automatically:
+  entries stay in this browser profile's local storage, are not encrypted by
+  Tritobol or synced to other devices, and can be reviewed or deleted in the UI.
+  History is limited to 10 entries, with up to 50,000 combined text characters
+  per entry.
+
+See [`docs/APPLICATION.md`](docs/APPLICATION.md) for detailed setup, behavior,
+limits, and privacy information.
