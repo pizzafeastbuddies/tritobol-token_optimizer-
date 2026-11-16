@@ -434,6 +434,9 @@ private `.venv` and installs Flask and `tokenizers`, so it may need an internet
 connection once. The app then opens in your browser and runs on this computer;
 the running app makes no outbound network requests.
 
+Netlify deployment is a future option once Tritobol is ready for hosted use.
+For now, use the CLI or this local web app.
+
 The web UI includes:
 
 - **Dashboard:** tokenizer availability and recent run totals.
