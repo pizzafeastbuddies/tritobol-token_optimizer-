@@ -46,8 +46,8 @@ Configure a PyPI trusted publisher for the `pizzafeastbuddies/tritobol-token_opt
 repository, using `.github/workflows/publish.yml` and the GitHub Actions
 environment `pypi`. Publishing is triggered by a non-prerelease GitHub release;
 the release tag must match the package version (for example, `v0.1.0`). Choose
-the CLI-only release commit as the release target; the workflow rejects
-distributions that contain the web app package.
+the CLI-only release commit as the release target so the distributions do not
+include the web app package.
 
 The guide asks for one UTF-8 text file, optionally asks for a maximum token
 budget, and shows token counts plus a unified diff before saving. A budget may

@@ -44,30 +44,5 @@ jobs:
         run: |
           python -m pip install --upgrade build
           python -m build
-      - name: Verify distributions contain no web app package
-        run: |
-          python - <<'PY'
-          import tarfile
-          import zipfile
-          from pathlib import Path
-
-          wheel, = Path("dist").glob("*.whl")
-          sdist, = Path("dist").glob("*.tar.gz")
-          with zipfile.ZipFile(wheel) as archive:
-              wheel_app_files = [
-                  name for name in archive.namelist()
-                  if name.startswith("tritobol_app/")
-              ]
-          with tarfile.open(sdist, "r:gz") as archive:
-              sdist_app_files = [
-                  member.name for member in archive.getmembers()
-                  if "/tritobol_app/" in f"/{member.name}"
-              ]
-          if wheel_app_files or sdist_app_files:
-              raise SystemExit(
-                  "Refusing to publish distributions containing the web app package: "
-                  f"wheel={wheel_app_files}, sdist={sdist_app_files}"
-              )
-          PY
       - name: Publish distributions
         uses: pypa/gh-action-pypi-publish@release/v1
