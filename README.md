@@ -28,7 +28,7 @@ From a local project checkout, install in editable mode and run `tritobol` with
 no arguments in a terminal to start the guided workflow:
 
 ```bash
-git clone https://github.com/memostudycode/tritobol.git
+git clone https://github.com/pizzafeastbuddies/tritobol-token_optimizer-.git
 cd tritobol
 python -m pip install -e .
 tritobol
