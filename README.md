@@ -29,9 +29,9 @@ no arguments in a terminal to start the guided workflow:
 
 ```bash
 git clone https://github.com/pizzafeastbuddies/tritobol-token_optimizer-.git
-cd tritobol
+cd tritobol-token_optimizer-
 python -m pip install -e .
-tritobol
+tritobol-token_optimizer-
 ```
 
 The guide asks for one UTF-8 text file, optionally asks for a maximum token
