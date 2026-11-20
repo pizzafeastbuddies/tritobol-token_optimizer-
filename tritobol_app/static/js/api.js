@@ -4,14 +4,19 @@ export class ApiError extends Error {
 }
 const base = () => globalThis.TRITOBOL_BASE_URL || '';
 const token = () => document.querySelector('meta[name="tritobol-token"]')?.content || '';
+let csrfToken = '';
+export function setCsrf(value) { csrfToken = value || ''; }
 
 async function request(path, { method = 'GET', json, form, signal } = {}) {
   const headers = {};
-  if (method === 'POST') headers['X-Tritobol-Token'] = token();
+  if (method === 'POST') {
+    headers['X-Tritobol-Token'] = token();
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+  }
   if (json !== undefined) headers['Content-Type'] = 'application/json';
   let res;
   try {
-    res = await fetch(base() + path, { method, headers, signal, body: json !== undefined ? JSON.stringify(json) : form });
+    res = await fetch(base() + path, { method, headers, credentials: 'same-origin', signal, body: json !== undefined ? JSON.stringify(json) : form });
   } catch (err) {
     if (err && err.name === 'AbortError') throw new ApiError('cancelled', 'Cancelled.');
     throw new ApiError('backend_unavailable', 'Cannot reach the Tritobol backend. Check that the app is still running (start it again with start.bat), then reload this page.');
@@ -26,6 +31,11 @@ async function request(path, { method = 'GET', json, form, signal } = {}) {
 }
 
 export const api = {
+  session: () => request('/api/auth/session'),
+  register: (body) => request('/api/auth/register', { method: 'POST', json: body }),
+  login: (body) => request('/api/auth/login', { method: 'POST', json: body }),
+  logout: () => request('/api/auth/logout', { method: 'POST', json: {} }),
+  changePassword: (body) => request('/api/auth/password', { method: 'POST', json: body }),
   health: () => request('/api/health'),
   tokenizers: () => request('/api/tokenizers'),
   uploadTokenizer: (file) => { const f = new FormData(); f.append('file', file, file.name); return request('/api/tokenizers/upload', { method: 'POST', form: f }); },
