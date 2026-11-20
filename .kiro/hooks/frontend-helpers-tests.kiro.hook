@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Run frontend helper tests",
+  "description": "When frontend JavaScript changes, run the Node built-in test runner.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["tritobol_app/static/js/*.js", "frontend_tests/*.mjs"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Frontend JS changed. Run `node --test frontend_tests` and report the actual result."
+  }
+}

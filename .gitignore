@@ -5,3 +5,9 @@ build/
 dist/
 .pytest_cache/
 .venv/
+# Runtime artefacts created by the app
+tritobol_exports/
+tritobol_app/data/*.sqlite
+tritobol_app/data/*.sqlite-*
+tritobol_app/data/.secret_key
+node_modules/

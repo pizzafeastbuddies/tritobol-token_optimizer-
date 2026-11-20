@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="tritobol-token" content="__TRITOBOL_TOKEN__">
+  <title>Tritobol — token optimizer</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="stylesheet" href="/static/css/tritobol.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<svg xmlns="http://www.w3.org/2000/svg" hidden>
+  <symbol id="i-dash" viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4l10-10-4-4L4 16zM13 6l4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cols" viewBox="0 0 24 24"><path d="M4 5h7v14H4zM13 5h7v14h-7z" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 8v5l3 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19h16M7 16v-5M12 16V7M17 16v-8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v10M8 10l4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.4 7.8-8 9-4.6-1.2-8-4-8-9V6z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-half" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></symbol>
+</svg>
+<div class="shell" id="shell">
+  <header class="rail" id="sidebar">
+    <div class="brand-row">
+      <a class="brand" href="#/home" aria-label="Tritobol home">
+        <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 17c3-5 8-5 10-8" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/><ellipse cx="32" cy="38" rx="21" ry="17" fill="#c46b4a"/><path d="M32 22v32M20 24c-5 8-5 20 0 28M44 24c5 8 5 20 0 28" stroke="#5c3d73" stroke-width="2.5" fill="none"/><path d="M22 34l5 6h-9zM42 34l5 6h-9z" fill="#f6e7c1"/><path d="M23 47l3-3 3 3 3-3 3 3 3-3 3 3" stroke="#f6e7c1" stroke-width="2.5" fill="none" stroke-linejoin="round"/></svg>
+        <span class="brand-name">Tritobol</span>
+      </a>
+      <button type="button" class="icon-btn" id="sidebar-collapse" aria-expanded="true" title="Collapse sidebar">Collapse</button>
+    </div>
+    <nav aria-label="Main" class="nav">
+      <p class="nav-label">Workspace</p>
+      <a href="#/dashboard" data-route="dashboard" title="Dashboard"><svg class="nav-icon" aria-hidden="true"><use href="#i-dash"/></svg><span class="nav-text">Dashboard</span></a>
+      <a href="#/optimize" data-route="optimize" title="Optimizer"><svg class="nav-icon" aria-hidden="true"><use href="#i-edit"/></svg><span class="nav-text">Optimizer</span></a>
+      <a href="#/results" data-route="results" title="Results"><svg class="nav-icon" aria-hidden="true"><use href="#i-cols"/></svg><span class="nav-text">Results</span></a>
+      <a href="#/history" data-route="history" title="Prompt history"><svg class="nav-icon" aria-hidden="true"><use href="#i-clock"/></svg><span class="nav-text">Prompt history</span></a>
+      <a href="#/analytics" data-route="analytics" title="Analytics"><svg class="nav-icon" aria-hidden="true"><use href="#i-chart"/></svg><span class="nav-text">Analytics</span></a>
+      <p class="nav-label">Tools</p>
+      <a href="#/results" title="Prompt comparison"><svg class="nav-icon" aria-hidden="true"><use href="#i-cols"/></svg><span class="nav-text">Prompt comparison</span></a>
+      <a href="#/history" title="Backup and restore"><svg class="nav-icon" aria-hidden="true"><use href="#i-down"/></svg><span class="nav-text">Backup and restore</span></a>
+      <p class="nav-label">Preferences</p>
+      <a href="#/settings" data-route="settings" title="Settings"><svg class="nav-icon" aria-hidden="true"><use href="#i-gear"/></svg><span class="nav-text">Settings</span></a>
+      <a href="#/settings" title="Theme"><svg class="nav-icon" aria-hidden="true"><use href="#i-half"/></svg><span class="nav-text">Theme</span></a>
+    </nav>
+    <div class="rail-foot">
+      <a class="rail-link" href="#/home">Product site</a>
+      <a class="rail-link" href="#/signin">Sign in</a>
+      <p class="rail-note">Accounts are stored with this installation. Prompt history stays in this browser.</p>
+    </div>
+  </header>
+  <button type="button" class="nav-backdrop" id="nav-backdrop" hidden aria-label="Close menu"></button>
+
+  <div class="workspace">
+  <header class="topbar">
+    <button type="button" class="icon-btn" id="nav-open" aria-controls="sidebar" aria-expanded="false">Menu</button>
+    <p class="topbar-title" id="topbar-title">Dashboard</p>
+    <button type="button" class="icon-btn theme-toggle" aria-label="Switch to dark theme">
+      <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5 5l1.6 1.6M17.4 17.4 19 19M19 5l-1.6 1.6M6.6 17.4 5 19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3.2A8.2 8.2 0 1 0 20.8 14 6.4 6.4 0 0 1 15 3.2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <a class="btn btn-small btn-primary" href="#/optimize">Optimize</a>
+    <div class="profile" id="profile-menu" hidden>
+      <button type="button" class="icon-btn" id="profile-open" aria-expanded="false" aria-controls="profile-panel">Account</button>
+      <div id="profile-panel" class="profile-panel" hidden>
+        <p id="profile-name"></p>
+        <p id="profile-email" class="hint"></p>
+        <button type="button" class="btn btn-small" id="btn-sign-out">Sign out</button>
+      </div>
+    </div>
+  </header>
+  <header class="site-header">
+    <a class="brand" href="#/home" aria-label="Tritobol home">
+      <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 17c3-5 8-5 10-8" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/><ellipse cx="32" cy="38" rx="21" ry="17" fill="#c46b4a"/><path d="M32 22v32M20 24c-5 8-5 20 0 28M44 24c5 8 5 20 0 28" stroke="#5c3d73" stroke-width="2.5" fill="none"/><path d="M22 34l5 6h-9zM42 34l5 6h-9z" fill="#f6e7c1"/><path d="M23 47l3-3 3 3 3-3 3 3 3-3 3 3" stroke="#f6e7c1" stroke-width="2.5" fill="none" stroke-linejoin="round"/></svg>
+      <span class="brand-name">Tritobol</span>
+    </a>
+    <nav class="site-nav" aria-label="Site">
+      <a href="#/home">Home</a>
+      <a href="#/features">Features</a>
+      <a href="#/about">About</a>
+      <a href="#/contact">Contact</a>
+    </nav>
+    <div class="site-actions">
+      <button type="button" class="icon-btn theme-toggle" aria-label="Switch to dark theme">
+        <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5 5l1.6 1.6M17.4 17.4 19 19M19 5l-1.6 1.6M6.6 17.4 5 19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3.2A8.2 8.2 0 1 0 20.8 14 6.4 6.4 0 0 1 15 3.2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      </button>
+      <a class="btn btn-small" href="#/signin">Sign in</a>
+      <a class="btn btn-small btn-primary" href="#/signup">Get Started</a>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <noscript><p class="banner banner-error">Tritobol needs JavaScript enabled in your browser.</p></noscript>
+    <div id="app-alert" class="banner banner-error" role="alert" hidden></div>
+
+    <!-- ============ Dashboard ============ -->
+    <p id="session-gate" class="card" hidden>Checking your session…</p>
+    <section id="view-dashboard" data-view="dashboard" aria-labelledby="h-dash" hidden>
+      <div class="hero">
+        <div class="hero-copy">
+          <p class="kicker">Local token optimizer</p>
+          <h1 id="h-dash">Trim the prompt.<br>Bolster the context.</h1>
+          <p class="lede">Tritobol removes repeated and low-value text from prompts with fixed rules — no summarising, no rewriting — counts tokens with the tokenizer you choose, and can keep only the newest context inside a token budget.</p>
+          <div class="actions">
+            <a class="btn btn-primary" id="dash-start" href="#/optimize">Optimize text</a>
+            <a class="btn btn-ghost" href="#/history">View history</a>
+          </div>
+          <nav class="quick-nav" aria-label="Quick">
+            <a href="#/optimize">Optimizer</a>
+            <a href="#/results">Results</a>
+            <a href="#/analytics">Analytics</a>
+            <a href="#/history">History</a>
+          </nav>
+        </div>
+        <figure class="lantern" aria-live="polite">
+          <svg viewBox="0 0 200 180" aria-hidden="true" class="lantern-svg">
+            <path d="M100 38c8-14 22-14 30-24" stroke="#8fb573" stroke-width="9" fill="none" stroke-linecap="round"/>
+            <ellipse cx="100" cy="106" rx="84" ry="64" fill="#b84a00"/>
+            <path d="M100 44v124M58 52c-26 28-26 80 0 108M142 52c26 28 26 80 0 108" stroke="#7d3200" stroke-width="5" fill="none"/>
+            <path d="M58 92l16 22H42zM142 92l16 22h-32z" fill="#ffd27a"/>
+            <path d="M62 138l9-10 9 10 9-10 10 10 10-10 9 10 9-10 9 10" stroke="#ffd27a" stroke-width="7" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+          </svg>
+          <figcaption id="dash-hero-stat"><span class="lantern-label">No run yet this session</span></figcaption>
+        </figure>
+      </div>
+
+      <div class="grid-3">
+        <article class="card"><h2>What it does</h2><p>Drops decorative separators, repeated paragraphs, lines and sentences, invisible characters and HTML comments. Fenced Python and JSON are only changed if the result still parses.</p></article>
+        <article class="card"><h2>What a budget does</h2><p>If you set a token budget and the trimmed text is still too long, the <strong>oldest</strong> tokens are discarded and the newest kept. That is truncation, not summarising — and you are always told when it happens.</p></article>
+        <article class="card"><h2>Engine</h2><div id="dash-engine"><p class="muted">Checking tokenizer…</p></div></article>
+      </div>
+
+      <div class="grid-2">
+        <article class="card"><h2>This session</h2><div id="dash-session"><p class="muted">Run an optimization to see real totals here.</p></div></article>
+        <article class="card"><h2>Recent optimizations</h2><div id="dash-activity"><p class="muted">Nothing yet. Only numbers are remembered, never your text.</p></div></article>
+        <article class="card" id="dash-chart"><h2>Savings trend</h2><p class="muted">Run at least two optimizations to see a trend here. Empty charts are not filled with sample data.</p></article>
+        <article class="card" id="dash-cost"><h2>Estimated cost</h2><p>Tritobol does not estimate money. It never calls a model provider and it does not assume a token price.</p></article>
+      </div>
+    </section>
+
+    <!-- ============ Optimizer ============ -->
+    <section id="view-optimize" data-view="optimize" aria-labelledby="h-opt" hidden>
+      <h1 id="h-opt">Prompt optimizer</h1>
+      <div class="optimizer">
+        <div class="card editor-card">
+          <div class="toolbar">
+            <label for="input-text" class="field-label">Your text</label>
+            <div class="toolbar-actions">
+              <button type="button" class="btn btn-small" id="btn-load">Load text file</button>
+              <button type="button" class="btn btn-small btn-quiet" id="btn-clear">Clear</button>
+              <input type="file" id="file-input" hidden accept=".txt,.md,.markdown,.rst,.adoc,.log,.csv,.json,.yaml,.yml,.py,.toml,.ini,.xml,.html,text/*">
+            </div>
+          </div>
+          <textarea id="input-text" spellcheck="false" placeholder="Paste a prompt, notes or a document here — or load a UTF-8 text file." aria-describedby="char-count input-error"></textarea>
+          <div class="meter-row">
+            <span id="char-count" class="muted">0 characters</span>
+            <span id="size-meter" class="muted">0 B of 2 MB</span>
+          </div>
+          <p id="file-info" class="muted" hidden></p>
+          <p id="input-error" class="field-error" role="alert" hidden></p>
+        </div>
+
+        <div class="card options-card">
+          <h2>Options</h2>
+          <div class="field">
+            <label for="opt-tokenizer" class="field-label">Tokenizer</label>
+            <select id="opt-tokenizer"></select>
+            <p id="tok-status" class="hint"></p>
+            <button type="button" class="btn btn-small btn-quiet" id="btn-tok-upload">Use my own tokenizer.json…</button>
+            <input type="file" id="tok-file" hidden accept=".json,application/json">
+          </div>
+          <div class="field">
+            <label for="opt-budget" class="field-label">Token budget <span class="muted">(optional)</span></label>
+            <input id="opt-budget" type="text" inputmode="numeric" autocomplete="off" placeholder="No budget" aria-describedby="budget-hint budget-error">
+            <p id="budget-hint" class="hint">If the trimmed text is still longer, the oldest tokens are discarded and the newest kept.</p>
+            <p id="budget-error" class="field-error" role="alert" hidden></p>
+          </div>
+          <div class="field">
+            <label for="opt-task" class="field-label">Strategy</label>
+            <select id="opt-task">
+              <option value="auto">Auto-detect (code vs. prose)</option>
+              <option value="document">Document (shorter duplicates removed)</option>
+              <option value="coding">Coding (more conservative)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="opt-sensitive" class="field-label">Credential-looking values</label>
+            <select id="opt-sensitive" aria-describedby="sens-hint">
+              <option value="skip">Leave untouched (skip)</option>
+              <option value="mask">Replace with [REDACTED]</option>
+              <option value="off">Do not scan</option>
+            </select>
+            <p id="sens-hint" class="hint">Pattern-based and incomplete. “Leave untouched” keeps them in the output.</p>
+          </div>
+          <label class="check"><input type="checkbox" id="opt-protect" checked> Protect fenced code blocks</label>
+          <div class="run-row">
+            <button type="button" class="btn btn-primary btn-wide" id="btn-optimize">Optimize</button>
+            <button type="button" class="btn btn-ghost" id="btn-cancel" hidden>Cancel</button>
+          </div>
+          <p id="run-status" class="muted" role="status" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <section id="results" class="results" aria-labelledby="h-res" hidden>
+        <h2 id="h-res">Result</h2>
+        <div id="result-banner"></div>
+        <div id="result-tiles" class="tiles"></div>
+        <p class="fineprint">Token counts are for the supplied text with the selected tokenizer. They do not include chat templates, message framing or provider/API overhead.</p>
+        <div class="tabs" role="tablist" aria-label="Result views">
+          <button role="tab" id="tab-compare" aria-controls="panel-compare" aria-selected="true">Compare</button>
+          <button role="tab" id="tab-diff" aria-controls="panel-diff" aria-selected="false" tabindex="-1">Diff</button>
+          <button role="tab" id="tab-details" aria-controls="panel-details" aria-selected="false" tabindex="-1">Details</button>
+        </div>
+        <div id="panel-compare" role="tabpanel" aria-labelledby="tab-compare"></div>
+        <div id="panel-diff" role="tabpanel" aria-labelledby="tab-diff" hidden></div>
+        <div id="panel-details" role="tabpanel" aria-labelledby="tab-details" hidden></div>
+
+        <div class="card export-card" id="export-bar">
+          <h3>Export optimized text</h3>
+          <div class="export-grid">
+            <div class="field"><label for="export-name" class="field-label">File name</label><input id="export-name" type="text" value="optimized.txt"></div>
+            <div class="field"><label for="export-dir" class="field-label">Folder <span class="muted">(optional)</span></label><input id="export-dir" type="text" placeholder="Default: tritobol_exports next to where the app was started"></div>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn btn-primary" id="btn-download">Download</button>
+            <button type="button" class="btn" id="btn-save-copy">Save a new file in the folder</button>
+            <button type="button" class="btn btn-quiet" id="btn-copy">Copy text</button>
+          </div>
+          <p class="hint">Exports always create a new file. If the name exists, a numbered name is used; nothing is overwritten, and your original is never touched.</p>
+          <p id="export-status" role="status" aria-live="polite"></p>
+          <div class="save-local">
+            <h3>Save this run in the browser</h3>
+            <label class="check" for="save-prompt-ack"><input type="checkbox" id="save-prompt-ack"> Save the original and optimized text on this computer. Statistics are stored either way, without the text, until you tick this box.</label>
+            <button type="button" class="btn" id="btn-save-prompt">Save prompt locally</button>
+            <p id="save-prompt-status" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- ============ Results ============ -->
+    <section id="view-results" data-view="results" aria-labelledby="h-page-res" hidden>
+      <h1 id="h-page-res">Optimization results</h1>
+      <p class="lede">The latest run in this tab. Counts come from the optimizer you just used. Nothing here is a sample dataset.</p>
+      <div id="results-empty" class="card empty"><p>No optimization has been run in this tab yet.</p><a class="btn btn-primary" href="#/optimize">Go to the optimizer</a></div>
+      <div id="results-page" hidden></div>
+    </section>
+
+    <!-- ============ History ============ -->
+    <section id="view-history" data-view="history" aria-labelledby="h-hist" hidden>
+      <h1 id="h-hist">Prompt history</h1>
+      <p class="lede">History stays in this browser. Run statistics are saved automatically and do not include prompt text. Prompt text is saved only when you confirm it, and a backup is imported only when you confirm the preview.</p>
+      <div class="card filters">
+        <div class="export-grid">
+          <div class="field"><label for="history-search" class="field-label">Search</label><input id="history-search" type="text" placeholder="Tokenizer, file name, or saved text"></div>
+          <div class="field"><label for="history-truncated" class="field-label">Budget cut</label>
+            <select id="history-truncated"><option value="any">Any</option><option value="yes">Budget cut only</option><option value="no">No budget cut</option></select>
+          </div>
+        </div>
+        <div class="export-grid">
+          <div class="field"><label for="history-from" class="field-label">From</label><input id="history-from" type="text" placeholder="YYYY-MM-DD" inputmode="numeric"></div>
+          <div class="field"><label for="history-to" class="field-label">To</label><input id="history-to" type="text" placeholder="YYYY-MM-DD" inputmode="numeric"></div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="btn-history-export">Export backup</button>
+          <label class="btn" for="history-file">Import backup<input type="file" id="history-file" hidden accept=".json,application/json"></label>
+        </div>
+        <p id="history-usage" class="hint"></p>
+        <p id="history-status" role="status" aria-live="polite"></p>
+        <div id="history-preview" class="preview" hidden></div>
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="btn-import-confirm" hidden>Import new records</button>
+          <button type="button" class="btn btn-quiet" id="btn-import-cancel" hidden>Cancel import</button>
+        </div>
+      </div>
+      <div id="history-empty" class="card empty"><p>No local history yet. Optimize some text, or import a Tritobol backup.</p><a class="btn btn-primary" href="#/optimize">Go to the optimizer</a></div>
+      <div id="history-list" hidden></div>
+    </section>
+
+    <!-- ============ Analytics ============ -->
+    <section id="view-analytics" data-view="analytics" aria-labelledby="h-ana" hidden>
+      <h1 id="h-ana">Token analytics</h1>
+      <div id="analytics-empty" class="card empty"><p>No optimization has been run in this session yet.</p><a class="btn btn-primary" href="#/optimize">Go to the optimizer</a></div>
+      <div id="analytics-body" hidden></div>
+    </section>
+
+    <!-- ============ Privacy ============ -->
+    <section id="view-privacy" data-view="privacy" aria-labelledby="h-priv" hidden>
+      <h1 id="h-priv">Privacy and security</h1>
+      <div class="grid-2">
+        <article class="card"><h2>Where processing happens</h2><p>On this computer. The optimizer is a Python program running next to this page; the server listens on <code>127.0.0.1</code> only and rejects requests addressed to any other host. Tokenizers run locally; the DeepSeek tokenizer is bundled with the app.</p></article>
+        <article class="card"><h2>Is anything transmitted?</h2><p>Prompt text makes no outbound network requests: no analytics, no web fonts, no CDN scripts, no model APIs. Your text goes from this page to the local server and back. The account email and password are stored in this installation’s SQLite database, not sent to an outside service. <span id="privacy-live" class="muted"></span></p></article>
+        <article class="card"><h2>What is stored</h2><p>Prompt text is processed in memory and is not logged. Your browser stores settings and the numbers from recent runs. Prompt text is stored only after you tick the confirmation box on a result, and only in this browser. The SQLite database stores the account name, email, and password hash. It does not store prompt contents or uploaded documents.</p></article>
+        <article class="card"><h2>Uploaded tokenizers</h2><p>A <code>tokenizer.json</code> you upload is size-limited, validated by loading it, kept in memory only, and any temporary file is deleted straight away. Up to three are kept until the app stops.</p></article>
+      </div>
+      <article class="card card-warn">
+        <h2>Limits of sensitive-data detection</h2>
+        <p>Tritobol looks for credential-shaped text using fixed patterns: well-known key prefixes for about a dozen providers (for example <code>sk-</code>, <code>ghp_</code>, <code>github_pat_</code>, <code>AKIA</code>, <code>AIza</code>, <code>hf_</code>) followed by a long run of key characters; assignments such as <code>password = …</code> or <code>api_key: …</code> with a value of 12+ characters; PEM private-key blocks; and <code>CONFIDENTIAL:</code>, <code>INTERNAL ONLY:</code> or <code>DO NOT DISTRIBUTE:</code> lines and <code>BEGIN/END CONFIDENTIAL</code> blocks.</p>
+        <p><strong>This is not complete secret detection.</strong> Secrets in other formats, short values, secrets written in prose, personal data and anything not matching those patterns will not be found. In “Leave untouched” mode, found values stay in the optimized text; “Replace with [REDACTED]” masks only what was found. Always review text yourself before sharing it.</p>
+      </article>
+    </section>
+
+    <!-- ============ Settings ============ -->
+    <section id="view-settings" data-view="settings" aria-labelledby="h-set" hidden>
+      <h1 id="h-set">Settings</h1>
+      <div class="card settings-card">
+        <p class="muted">These defaults are saved in this browser. The account itself is stored in this installation’s database.</p>
+        <h2>Account</h2>
+        <p id="account-name"></p>
+        <p id="account-email" class="hint"></p>
+        <form id="form-password" novalidate>
+          <div class="field">
+            <label for="account-current" class="field-label">Current password</label>
+            <input id="account-current" type="password" autocomplete="current-password" aria-describedby="account-current-error">
+            <p id="account-current-error" class="field-error" role="alert" hidden></p>
+          </div>
+          <div class="field">
+            <label for="account-new" class="field-label">New password</label>
+            <input id="account-new" type="password" autocomplete="new-password" aria-describedby="account-new-error">
+            <p id="account-new-error" class="field-error" role="alert" hidden></p>
+          </div>
+          <div class="field">
+            <label for="account-confirm" class="field-label">Confirm new password</label>
+            <input id="account-confirm" type="password" autocomplete="new-password" aria-describedby="account-confirm-error">
+            <p id="account-confirm-error" class="field-error" role="alert" hidden></p>
+          </div>
+          <button type="submit" class="btn" id="account-submit">Change password</button>
+          <p id="account-status" class="notice" role="status" aria-live="polite"></p>
+        </form>
+        <p id="set-storage" class="hint"></p>
+        <div class="field"><label for="set-theme" class="field-label">Theme</label>
+          <select id="set-theme">
+            <option value="system">System default</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+          <p class="hint">Light is ivory and violet. Dark is plum and ember. The button at the top switches immediately. System follows this computer.</p>
+        </div>
+        <div class="field"><label for="set-tokenizer" class="field-label">Default tokenizer</label><select id="set-tokenizer"></select></div>
+        <div class="field"><label for="set-budget" class="field-label">Default token budget</label><input id="set-budget" type="text" inputmode="numeric" placeholder="No budget"><p id="set-budget-error" class="field-error" role="alert" hidden></p></div>
+        <div class="field"><label for="set-task" class="field-label">Strategy</label><select id="set-task"><option value="auto">Auto-detect</option><option value="document">Document</option><option value="coding">Coding</option></select></div>
+        <div class="field"><label for="set-sensitive" class="field-label">Credential-looking values</label><select id="set-sensitive"><option value="skip">Leave untouched (skip)</option><option value="mask">Replace with [REDACTED]</option><option value="off">Do not scan</option></select></div>
+        <label class="check"><input type="checkbox" id="set-protect"> Protect fenced code blocks</label>
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="btn-save-settings">Save settings</button>
+          <button type="button" class="btn" id="btn-reset-settings">Reset to defaults</button>
+          <button type="button" class="btn btn-quiet" id="btn-clear-history">Erase run history</button>
+          <a class="btn" href="#/history">Open prompt history</a>
+        </div>
+        <p class="hint">Erase asks you to press the button again. Export a backup from Prompt history first if you want to keep the records. Import never runs by itself.</p>
+        <p id="set-status" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <!-- ============ Public site ============ -->
+    <section id="view-home" data-view="home" aria-labelledby="h-home">
+      <div class="hero">
+        <div class="hero-copy">
+          <p class="kicker">Local prompt optimizer</p>
+          <h1 id="h-home">Shorter prompts.<br>The same meaning, still on your machine.</h1>
+          <p class="lede">Tritobol removes repeated text and formatting noise, counts tokens with a real tokenizer, and can keep the newest context inside a budget. It does not summarize or rewrite. Create an account on this installation, then sign in to open the workspace.</p>
+          <div class="actions">
+            <a class="btn btn-primary" id="link-get-started" href="#/signup">Get Started</a>
+            <a class="btn btn-ghost" id="link-sign-in" href="#/signin">Sign in</a>
+          </div>
+        </div>
+        <article class="card preview-card" aria-label="Application preview">
+          <p class="kicker">Workspace</p>
+          <div class="preview-chrome">
+            <span>Optimizer</span>
+            <span class="muted">No run yet</span>
+          </div>
+          <div class="preview-panes">
+            <p><strong>Original</strong><br>Your prompt stays in the editor until you choose to replace it.</p>
+            <p><strong>Optimized</strong><br>The result, the token counts, and the diff appear after a real run.</p>
+          </div>
+        </article>
+      </div>
+      <div class="grid-3">
+        <article class="card"><h2>Token reduction</h2><p>Repeated paragraphs, lines, sentences, and decorative separators are removed by fixed rules. Savings depend on the text.</p></article>
+        <article class="card"><h2>A visible diff</h2><p>Compare the original and the optimized prompt, then open the diff. Your textarea is not overwritten.</p></article>
+        <article class="card"><h2>Local history</h2><p>Run statistics stay in this browser. Prompt text is saved only after you confirm, and backups import only after a preview.</p></article>
+      </div>
+      <section class="card steps">
+        <h2>How it works</h2>
+        <ol>
+          <li>Paste text or load a UTF-8 file in the optimizer.</li>
+          <li>Tritobol counts tokens locally and applies its cleanup rules. A budget, if you set one, keeps the newest tokens and says when it truncates.</li>
+          <li>Review the comparison, copy or export a new file, and optionally save the prompt on this computer.</li>
+        </ol>
+      </section>
+      <section class="faq">
+        <h2>Questions</h2>
+        <details><summary>Does Tritobol rewrite my prompt?</summary><p>No. It removes repeated and low-value text. It does not summarize.</p></details>
+        <details><summary>Do I need an account?</summary><p>Yes, to open the dashboard. Get Started saves the account in this installation. There is no email verification step. Sign in with the password you chose.</p></details>
+        <details><summary>Where does history go?</summary><p>Statistics and any prompt you explicitly save stay in this browser. Export writes a file you choose. Nothing is uploaded.</p></details>
+      </section>
+    </section>
+
+    <section id="view-features" data-view="features" aria-labelledby="h-features" hidden>
+      <h1 id="h-features">Features</h1>
+      <p class="lede">The workspace features below open after you sign in. Tritobol does not include a separate token-price calculator.</p>
+      <div class="grid-2">
+        <article class="card"><h2>Prompt optimization</h2><p>Paste text, choose a tokenizer, an optional budget, a strategy, and how credential-shaped values are treated. The engine is the same one the command line uses.</p><a href="#/optimize">Open the optimizer</a></article>
+        <article class="card"><h2>Token reduction</h2><p>The result reports original tokens, optimized tokens, tokens saved, and the percentage. A hard budget can discard older tokens and labels that as truncation.</p></article>
+        <article class="card"><h2>Before-and-after comparison</h2><p>The result view shows both texts, a diff, and the cleanup details.</p><a href="#/results">Open results</a></article>
+        <article class="card"><h2>Analytics</h2><p>Charts use the latest run and the counts stored in this browser. Empty states stay empty.</p><a href="#/analytics">Open analytics</a></article>
+        <article class="card"><h2>Local prompt history</h2><p>Every run stores counts. The prompt text is stored only after you tick the confirmation box.</p><a href="#/history">Open history</a></article>
+        <article class="card"><h2>Backup and restore</h2><p>Export a JSON backup. Import shows a preview, skips duplicates, and does not replace existing rows if the file is rejected.</p></article>
+        <article class="card"><h2>Same engine as the command line</h2><p>The website and the <code>tritobol</code> command use the same cleanup rules. A run in the workspace is a real optimization, not a sample.</p></article>
+      </div>
+    </section>
+
+    <section id="view-about" data-view="about" aria-labelledby="h-about" hidden>
+      <h1 id="h-about">About Tritobol</h1>
+      <div class="card">
+        <p>Tritobol is a local preprocessor for long prompts. The name is trim, token, and bolster: drop redundant text, count tokens with a tokenizer you can inspect, and keep the newest context when a budget requires a cut.</p>
+        <p>The approach is deterministic. The same input and settings produce the same cleanup. It is not a model, and it does not call a provider.</p>
+        <p>The same engine is available as a Python library and a command-line tool. An account on this installation opens the workspace. The account record does not include the prompt.</p>
+      </div>
+    </section>
+
+    <section id="view-contact" data-view="contact" aria-labelledby="h-contact" hidden>
+      <h1 id="h-contact">Contact and feedback</h1>
+      <div class="card auth-card">
+        <p>This build has no feedback inbox and no published email address. The note below stays in the form until you copy it. Tritobol does not upload it.</p>
+        <div class="field">
+          <label for="contact-note" class="field-label">Your note</label>
+          <textarea id="contact-note" rows="6" placeholder="What worked, what was confusing, what you want next."></textarea>
+        </div>
+        <button type="button" class="btn btn-primary" id="contact-copy">Copy note</button>
+        <p id="contact-status" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section id="view-terms" data-view="terms" aria-labelledby="h-terms" hidden>
+      <h1 id="h-terms">Terms</h1>
+      <article class="card">
+        <p>An account is required to open the Tritobol workspace. This installation stores your name, email, and password hash in its SQLite database.</p>
+        <p>Prompt text, uploaded documents, and local history stay in this browser. They are not written into the account record.</p>
+        <p>You can sign out at any time. Signing out ends the session. It does not delete local history. Email recovery is not configured; change the password from Settings after you sign in.</p>
+      </article>
+    </section>
+
+    <section id="view-signin" data-view="signin" aria-labelledby="h-signin" hidden>
+      <div class="auth-layout">
+        <div class="auth-copy">
+          <p class="kicker">Local account</p>
+          <h1 id="h-signin">Sign in</h1>
+          <p>Use the email and password saved on this installation. A successful sign-in opens the dashboard.</p>
+        </div>
+        <form class="card auth-card" id="form-signin" novalidate>
+          <p id="signin-banner" class="notice" role="status"></p>
+          <div class="field">
+            <label for="signin-email" class="field-label">Email</label>
+            <input id="signin-email" type="email" autocomplete="username" aria-describedby="signin-email-error" required>
+            <p id="signin-email-error" class="field-error" role="alert" hidden></p>
+          </div>
+          <div class="field">
+            <label for="signin-password" class="field-label">Password</label>
+            <div class="password-row">
+              <input id="signin-password" type="password" autocomplete="current-password" aria-describedby="signin-password-error" required>
+              <button type="button" class="btn btn-small" id="signin-toggle" aria-controls="signin-password">Show</button>
+            </div>
+            <p id="signin-password-error" class="field-error" role="alert" hidden></p>
+          </div>
+          <button type="submit" class="btn btn-primary btn-wide" id="signin-submit">Sign in</button>
+          <p id="signin-status" class="notice" role="status" aria-live="polite"></p>
+          <p class="hint"><a href="#/signup">Create account</a> · <a href="#/forgot">Forgot password</a></p>
+        </form>
+      </div>
+    </section>
+
+    <section id="view-signup" data-view="signup" aria-labelledby="h-signup" hidden>
+      <div class="auth-layout">
+        <div class="auth-copy">
+          <p class="kicker">Local account</p>
+          <h1 id="h-signup">Create account</h1>
+          <p>This saves an account on this installation and returns you to Sign In. It does not open the dashboard, and it does not send an email.</p>
+        </div>
+        <form class="card auth-card" id="form-signup" novalidate>
+          <div class="field">
+            <label for="signup-name" class="field-label">Full name</label>
+            <input id="signup-name" type="text" autocomplete="name" aria-describedby="signup-name-error" required>
+            <p id="signup-name-error" class="field-error" role="alert" hidden></p>
+          </div>
+          <div class="field">
+            <label for="signup-email" class="field-label">Email</label>
+            <input id="signup-email" type="email" autocomplete="username" aria-describedby="signup-email-error" required>
+            <p id="signup-email-error" class="field-error" role="alert" hidden></p>
+          </div>
+          <div class="field">
+            <label for="signup-password" class="field-label">Password</label>
+            <div class="password-row">
+              <input id="signup-password" type="password" autocomplete="new-password" aria-describedby="signup-password-error signup-strength" required>
+              <button type="button" class="btn btn-small" id="signup-toggle" aria-controls="signup-password">Show</button>
+            </div>
+            <p id="signup-strength" class="hint">Strength: empty</p>
+            <p id="signup-password-error" class="field-error" role="alert" hidden></p>
+          </div>
+          <div class="field">
+            <label for="signup-confirm" class="field-label">Confirm password</label>
+            <input id="signup-confirm" type="password" autocomplete="new-password" aria-describedby="signup-confirm-error" required>
+            <p id="signup-confirm-error" class="field-error" role="alert" hidden></p>
+          </div>
+          <button type="submit" class="btn btn-primary btn-wide" id="signup-submit">Create account</button>
+          <p id="signup-status" class="notice" role="status" aria-live="polite"></p>
+          <p class="hint">Already have an account? <a href="#/signin">Sign in</a></p>
+        </form>
+      </div>
+    </section>
+
+    <section id="view-forgot" data-view="forgot" aria-labelledby="h-forgot" hidden>
+      <div class="auth-layout">
+        <div>
+          <h1 id="h-forgot">Forgot password</h1>
+          <div class="card">
+            <p>Email-based password recovery is not configured. Tritobol does not send a reset message and does not create a reset link.</p>
+            <p>If you still know the password, sign in and change it from Settings. If you do not, this installation cannot recover the account.</p>
+            <a class="btn btn-primary" href="#/signin">Back to sign in</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-reset" data-view="reset" aria-labelledby="h-reset" hidden>
+      <h1 id="h-reset">Password recovery</h1>
+      <article class="card">
+        <p>Email-based password recovery is not configured. There is no reset link to redeem.</p>
+        <p>Sign in and use Change password in Settings. An account whose password is lost cannot be recovered from Tritobol.</p>
+        <a class="btn" href="#/signin">Back to sign in</a>
+      </article>
+    </section>
+  </main>
+  <footer id="site-footer" class="site-footer" hidden>
+    <nav aria-label="Footer">
+      <a href="#/home">Home</a>
+      <a href="#/features">Features</a>
+      <a href="#/about">About</a>
+      <a href="#/contact">Contact</a>
+      <a href="#/terms">Terms</a>
+    </nav>
+    <p>Tritobol optimizer for long prompts. Accounts are stored with this installation.</p>
+  </footer>
+  </div>
+</div>
+<script type="module" src="/static/js/app.js"></script>
+</body>
+</html>

@@ -57,6 +57,10 @@ class WindowResult:
         )
 
 
+class BudgetTooSmallError(ValueError):
+    """The token budget is smaller than the smallest piece of text that can be kept."""
+
+
 class HuggingFaceTokenizer:
     """Load a compatible Hugging Face tokenizer JSON from a local file.
 
@@ -130,6 +134,12 @@ class HuggingFaceTokenizer:
                     high = middle
                 else:
                     low = middle + 1
+            if low > total_tokens - 1:
+                # No token boundary leaves anything to keep (e.g. one character needs more tokens than the
+                # budget allows). Previously this surfaced as an IndexError.
+                raise BudgetTooSmallError(
+                    f"max_tokens={max_tokens} is too small: not even the newest character fits within it"
+                )
             candidate = suffix_at(low)
             kept_tokens = self.count(candidate)
         else:

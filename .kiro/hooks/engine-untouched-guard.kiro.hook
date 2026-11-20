@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Engine untouched guard",
+  "description": "Warn when the core optimizer package is edited, since the app must not change engine behaviour.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["tritobol/*.py"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "The core engine in tritobol/ was edited. Confirm the change is intentional, then run `python -m pytest tests -q` to verify the original 40 tests still pass and the CLI is unaffected."
+  }
+}
