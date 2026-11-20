@@ -24,8 +24,8 @@ independent of any one provider.
 
 ## Install
 
-From a local project checkout, install in editable mode and run `tritobol` with
-no arguments in a terminal to start the guided workflow:
+Install from PyPI, then run `tritobol` with no arguments in a terminal to start
+the guided workflow:
 
 ```bash
 git clone https://github.com/pizzafeastbuddies/tritobol-token_optimizer-.git
@@ -33,6 +33,23 @@ cd tritobol-token_optimizer-
 python -m pip install -e .
 tritobol
 ```
+
+To install from the source repository instead:
+
+```bash
+git clone https://github.com/pizzafeastbuddies/tritobol-token_optimizer-.git
+cd tritobol-token_optimizer-
+python -m pip install .
+```
+
+### Publishing to PyPI (maintainers)
+
+Configure a PyPI trusted publisher for the `pizzafeastbuddies/tritobol-token_optimizer-`
+repository, using `.github/workflows/publish.yml` and the GitHub Actions
+environment `pypi`. Publishing is triggered by a non-prerelease GitHub release;
+the release tag must match the package version (for example, `v0.1.0`). Choose
+the CLI-only release commit as the release target so the distributions do not
+include the web app package.
 
 The guide asks for one UTF-8 text file, optionally asks for a maximum token
 budget, and shows token counts plus a unified diff before saving. A budget may
