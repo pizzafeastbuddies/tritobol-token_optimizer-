@@ -3,28 +3,50 @@ name: Publish to PyPI
 on:
   release:
     types: [published, released]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing stable release tag to publish, such as v0.1.0
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   publish:
-    if: github.event.release.prerelease == false
+    if: >-
+      (github.event_name == 'release' && github.event.release.prerelease == false) ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: ${{ github.event.release.html_url }}
+      url: ${{ github.event.release.html_url || format('https://github.com/{0}/releases/tag/{1}', github.repository, inputs.release_tag) }}
     permissions:
       contents: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.event.release.tag_name }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
+      - name: Verify manual dispatch targets a stable release
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          published_tag="$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" \
+            --jq 'select(.draft == false and .prerelease == false) | .tag_name')"
+          if [ "$published_tag" != "$RELEASE_TAG" ]; then
+            echo "Release ${RELEASE_TAG} was not found or is not a stable published release." >&2
+            exit 1
+          fi
       - name: Verify release tag matches package version
         env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}
         run: |
           python - <<'PY'
           import os
