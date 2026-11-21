@@ -29,12 +29,10 @@ dev = ["pytest>=7", "hypothesis>=6"]
 
 [project.scripts]
 tritobol = "tritobol.__main__:main"
-tritobol-app = "tritobol_app.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["tritobol*", "tritobol_app*"]
+include = ["tritobol", "tritobol.*"]
 
 [tool.setuptools.package-data]
 tritobol = ["data/*.json", "data/*.md", "data/LICENSE*"]
-tritobol_app = ["static/*.html", "static/*.svg", "static/css/*.css", "static/js/*.js"]
