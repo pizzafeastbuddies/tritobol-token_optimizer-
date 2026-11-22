@@ -415,6 +415,8 @@ details.
 
 Please click [project_overview](PROJECT_OVERVIEW.md) for analyses & details.
 
+Want to see Kiro usage? Click [kiro-evidence.md](docs/KIRO_EVIDENCE.md).
+
 ## License
 
 The tritobol source is MIT licensed. The bundled tokenizer retains DeepSeek's
