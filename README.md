@@ -4,7 +4,7 @@
 ![Multi-model compatible](https://img.shields.io/badge/Tokenizer-Multi--model%20compatible-6C5CE7)
 ![CLI app](https://img.shields.io/badge/Interface-CLI%20app-2D3436)
 ![Token and prompt optimizer](https://img.shields.io/badge/Tool-Token%20%26%20prompt%20optimizer-00B894)
-![Build for the Future 2026 Hackathon](https://img.shields.io/badge/Build%20for%20the%20Future-2026%20Hackathon-F39C12)
+![Kiroween 2026 Hackathon](https://img.shields.io/badge/Kiroween%202026%20Hackathon-F39C12)
 ![Built with heart while learning](https://img.shields.io/badge/Built%20with%20heart-While%20learning-E84393)
 
 **trim + token + bolster** — a lightweight Python token preprocessor that removes
@@ -24,15 +24,30 @@ independent of any one provider.
 
 ## Install
 
-From a local project checkout, install in editable mode and run `tritobol` with
-no arguments in a terminal to start the guided workflow:
+The repository and clone directory are named `tritobol-token_optimizer-`;
+the Python package and CLI command are named `tritobol`. To install from a
+source clone and start the guided workflow:
 
 ```bash
-git clone https://github.com/memostudycode/tritobol.git
-cd tritobol
+git clone https://github.com/pizzafeastbuddies/tritobol-token_optimizer-.git
+cd tritobol-token_optimizer-
 python -m pip install -e .
 tritobol
 ```
+
+For a non-editable source install, run this from the repository root instead:
+
+```bash
+python -m pip install .
+```
+
+### Publishing to PyPI (maintainers)
+
+Configure a PyPI trusted publisher for the `pizzafeastbuddies/tritobol-token_optimizer-`
+repository, using `.github/workflows/publish.yml` and the GitHub Actions
+environment `pypi`. Publishing is triggered by a non-prerelease GitHub release;
+the release tag must match the package version in `pyproject.toml` (for example,
+`v0.1.0`).
 
 The guide asks for one UTF-8 text file, optionally asks for a maximum token
 budget, and shows token counts plus a unified diff before saving. A budget may
@@ -424,5 +439,25 @@ MIT license notice.
 
 ## Web application (local UI)
 
-A local-first browser interface lives in `tritobol_app/`. On Windows, double-click `start.bat` (needs Python 3.10+).
-Everything runs on your computer; the optimizer engine above is unchanged. See [`docs/APPLICATION.md`](docs/APPLICATION.md).
+A local-first browser interface lives in `tritobol_app/`. It includes account
+registration and sign-in; account data is stored in the installation's SQLite
+database, while prompt history stays in the browser. To run it from a source
+clone, install the optional app dependency and start the local server:
+
+```bash
+python -m pip install -e ".[app]"
+python -m tritobol_app
+```
+
+On Windows, you can instead double-click `start.bat` (Python 3.10+ required).
+The app binds to `127.0.0.1` and uses Flask's development server; it is for
+local use only.
+
+### Deployment status
+
+Public deployment, including Netlify deployment, is not ready and is deferred.
+After the hackathon winner announcements, interested team members may decide
+whether to continue the project and plan deployment. No public hosting is
+currently available.
+
+See [`docs/APPLICATION.md`](docs/APPLICATION.md) for more about the local app.

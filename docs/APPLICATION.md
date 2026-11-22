@@ -136,5 +136,4 @@ pip install playwright && playwright install chromium && python -m pytest tests_
 - Diff may be skipped for very large/pathological inputs (explained in the UI).
 - Large inputs take time (≈7 s for 2 MB measured on the development machine); the UI shows progress and a Cancel button
   (cancelling stops waiting; the server finishes the current job).
-- Packaging: see "Packaging assessment" in `docs/IMPLEMENTATION_REPORT.md`.
-- `pip install .[app]` installs every file under `tritobol_app/static/` (including `favicon.svg`); `tests_app/test_app_packaging.py` fails if a static file is ever left out of `pyproject.toml` package-data.
+- Packaging: the PyPI distribution is CLI-only. The web application remains available from a source checkout using the instructions above; its modules and static assets are not included in the CLI distribution.
