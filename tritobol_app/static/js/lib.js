@@ -3,7 +3,6 @@
 export const MAX_INPUT_BYTES = 2 * 1024 * 1024;
 export const MAX_BUDGET = 100_000_000;
 export const HISTORY_LIMIT = 10;
-export const PROMPT_HISTORY_LIMIT = 50;
 export const DEFAULT_SETTINGS = Object.freeze({
   tokenizer: 'deepseek-v4.1-flash', budget: '', task_type: 'auto', sensitive_data: 'skip', protect_code_blocks: true,
 });
@@ -76,7 +75,7 @@ export function sensitiveSummary(result) {
   if (!n || mode === 'off') return null;
   if (mode === 'skip') {
     return { level: 'warn', headline: `${formatInt(n)} credential-looking value(s) were found and left in the optimized text`,
-      details: ['You chose “Leave untouched”, so these values are still in the output and in any export.',
+      details: ['You chose "Leave untouched", so these values are still in the output and in any export.',
         'Detection is pattern-based and incomplete: other secrets may be present that were not found. Review the text before sharing it.'] };
   }
   return { level: 'info', headline: `${formatInt(n)} credential-looking value(s) were replaced with [REDACTED]`,
