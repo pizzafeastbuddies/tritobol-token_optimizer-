@@ -24,6 +24,14 @@ from .service import TokenizerRegistry, run_optimization
 
 STATIC_DIR = Path(__file__).parent / "static"
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "[::1]"}
+# Allow overriding the localhost-only check via environment variable.
+# Set TRITOBOL_LOCAL_ONLY=0 to accept requests from any host (e.g. when deployed
+# behind a reverse proxy or on a public server).
+# Disable local-only host check only when env var is explicitly set to 0 or false.
+# Default (not set or any other value): keep localhost-only guard active.
+_DisableLocalOnly = os.environ.get("TRITOBOL_LOCAL_ONLY", None) in ("0", "false", "False", "")
+if _DisableLocalOnly:
+    LOCAL_HOSTS = set()  # disable the host guard entirely
 JSON_BODY_LIMIT = 12 * 1024 * 1024
 log = logging.getLogger("tritobol_app")
 
@@ -100,7 +108,8 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
     # ---------------------------------------------------------------- guards
     @app.before_request
     def guard():
-        if _host_only(request.host.lower()) not in LOCAL_HOSTS:
+        # Skip host-origin check if local-only mode is disabled.
+        if LOCAL_HOSTS and _host_only(request.host.lower()) not in LOCAL_HOSTS:
             raise AppError(
                 "forbidden",
                 "This app only answers requests addressed to localhost.",
@@ -109,7 +118,7 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
 
         if request.method == "POST":
             origin = request.headers.get("Origin")
-            if origin and _host_only(origin.split("://", 1)[-1].lower()) not in LOCAL_HOSTS:
+            if LOCAL_HOSTS and origin and _host_only(origin.split("://", 1)[-1].lower()) not in LOCAL_HOSTS:
                 raise AppError(
                     "forbidden",
                     "Cross-site requests are not allowed.",

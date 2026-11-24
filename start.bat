@@ -42,6 +42,7 @@ echo.
 echo Starting Tritobol. Your browser will open automatically.
 echo Everything runs on this computer. Press Ctrl+C here to stop.
 echo.
+set TRITOBOL_LOCAL_ONLY=0
 ".venv\Scripts\python.exe" -m tritobol_app
 if errorlevel 1 goto app_failed
 goto done

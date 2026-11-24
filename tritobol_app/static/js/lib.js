@@ -182,3 +182,52 @@ export function diffViewModel(diff, context = 3) {
 export function clipForDisplay(text, limit = 200_000) {
   return text.length <= limit ? { text, clipped: false, total: text.length } : { text: text.slice(0, limit), clipped: true, total: text.length };
 }
+
+// ---- password validation ----------------------------------------------------------------
+export function passwordStrength(p) {
+  const s = String(p || '');
+  if (s.length === 0) return 'empty';
+  if (s.length < 8) return 'too short';
+  if (s.length < 12) return 'weak';
+  if (s.length >= 12) return 'good';
+  return 'good';
+}
+
+export function passwordIssues(p) {
+  const s = String(p || '');
+  const issues = [];
+  if (s.length < 8) issues.push('At least 8 characters.');
+  if (s.length > 128) issues.push('At most 128 characters.');
+  return issues;
+}
+
+export function validateRegistration({ name, email, password, confirm }) {
+  const errors = { name: '', email: '', password: '', confirm: '' };
+  const n = String(name || '').trim();
+  const e = String(email || '').trim().toLowerCase();
+  const p = String(password || '');
+  const c = String(confirm || '');
+  let ok = true;
+  if (!n) { errors.name = 'Enter your name.'; ok = false; }
+  if (!e) { errors.email = 'Enter your email.'; ok = false; }
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { errors.email = 'Enter a valid email address.'; ok = false; }
+  if (!p) { errors.password = 'Enter a password.'; ok = false; }
+  else {
+    const issues = passwordIssues(p);
+    if (issues.length) { errors.password = issues.join(' '); ok = false; }
+  }
+  if (!c) { errors.confirm = 'Confirm your password.'; ok = false; }
+  else if (p !== c) { errors.confirm = 'Those passwords do not match.'; ok = false; }
+  return { ok, errors };
+}
+
+export function validateSignIn({ email, password }) {
+  const errors = { email: '', password: '' };
+  const e = String(email || '').trim().toLowerCase();
+  const p = String(password || '');
+  let ok = true;
+  if (!e) { errors.email = 'Enter your email.'; ok = false; }
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { errors.email = 'Enter a valid email address.'; ok = false; }
+  if (!p) { errors.password = 'Enter your password.'; ok = false; }
+  return { ok, errors };
+}
