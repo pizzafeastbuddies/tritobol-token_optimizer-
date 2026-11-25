@@ -125,4 +125,10 @@ export function initResults() {
     catch { status('Copy was blocked by the browser. Use Download instead.', false); }
   });
 }
+export function renderResultsPage() {
+  if (state.result && state.sourceText) {
+    renderResult(state.result, state.sourceText, state.sourceName);
+  }
+}
+
 export const _state = state;
