@@ -4,6 +4,16 @@ import { MAX_INPUT_BYTES, formatBytes, formatInt, utf8Bytes, validateBudget, val
 import { renderResult } from './results.js';
 import { setResult, state } from './store.js';
 
+export function loadDraft(text, filename = null) {
+  const input = $('input-text');
+  if (input) {
+    input.value = text || '';
+    loadedName = filename || null;
+    updateCounts();
+  }
+  location.hash = '#/optimize';
+}
+
 let controller = null, timer = null, loadedName = null;
 
 function setError(id, message, inputId) {

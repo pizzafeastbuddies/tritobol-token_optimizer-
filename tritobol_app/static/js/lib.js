@@ -3,6 +3,7 @@
 export const MAX_INPUT_BYTES = 2 * 1024 * 1024;
 export const MAX_BUDGET = 100_000_000;
 export const HISTORY_LIMIT = 10;
+export const PROMPT_HISTORY_LIMIT = 50;
 export const DEFAULT_SETTINGS = Object.freeze({
   tokenizer: 'deepseek-v4.1-flash', budget: '', task_type: 'auto', sensitive_data: 'skip', protect_code_blocks: true,
 });
@@ -230,4 +231,79 @@ export function validateSignIn({ email, password }) {
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { errors.email = 'Enter a valid email address.'; ok = false; }
   if (!p) { errors.password = 'Enter your password.'; ok = false; }
   return { ok, errors };
+}
+
+export function samePrompt(a, b) {
+  return a && b && a.original_text === b.original_text && a.tokenizer === b.tokenizer && (a.budget || '') === (b.budget || '');
+}
+
+export function sanitizePrompts(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((p) => p && typeof p === 'object' && typeof p.original_text === 'string').slice(0, PROMPT_HISTORY_LIMIT);
+}
+
+export function exportBackup(history, prompts, exported_at) {
+  return { version: 1, exported_at: exported_at || new Date().toISOString(), history: history || [], prompts: prompts || [] };
+}
+
+export function filterHistory(list, filters = {}) {
+  if (!Array.isArray(list)) return [];
+  return list.filter((item) => {
+    if (filters.query && !JSON.stringify(item).toLowerCase().includes(filters.query.toLowerCase())) return false;
+    if (filters.truncated && String(item.truncated) !== filters.truncated) return false;
+    return true;
+  });
+}
+
+export function groupByDate(entries) {
+  const groups = {};
+  for (const e of entries || []) {
+    const day = (e.at || e.saved_at || '').slice(0, 10) || 'Recent';
+    if (!groups[day]) groups[day] = [];
+    groups[day].push(e);
+  }
+  return Object.entries(groups).map(([day, list]) => ({ day, entries: list }));
+}
+
+export function inspectBackup(text) {
+  try {
+    const data = JSON.parse(text);
+    if (!data || typeof data !== 'object') return { ok: false, error: 'Invalid JSON backup.' };
+    return { ok: true, data };
+  } catch {
+    return { ok: false, error: 'Failed to parse backup JSON.' };
+  }
+}
+
+export function planHistoryImport(existingHistory, existingPrompts, inspected) {
+  const d = inspected.data || {};
+  return {
+    statsNew: Array.isArray(d.history) ? d.history : [],
+    promptsNew: Array.isArray(d.prompts) ? d.prompts : [],
+    statsRejected: [],
+    promptsRejected: [],
+    blocked: false,
+  };
+}
+
+export function importSummary(plan) {
+  return `Found ${(plan.statsNew || []).length} stats and ${(plan.promptsNew || []).length} prompts.`;
+}
+
+export function mergeImport(history, prompts, plan) {
+  return {
+    stats: [...(plan.statsNew || []), ...(history || [])].slice(0, HISTORY_LIMIT),
+    prompts: [...(plan.promptsNew || []), ...(prompts || [])].slice(0, PROMPT_HISTORY_LIMIT),
+  };
+}
+
+export function persistImport(merged, writer) {
+  const res = writer(merged.stats, merged.prompts);
+  return {
+    ok: res.ok,
+    error: res.error,
+    addedStats: (merged.stats || []).length,
+    addedPrompts: (merged.prompts || []).length,
+    unchanged: false,
+  };
 }

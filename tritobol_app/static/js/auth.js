@@ -6,6 +6,10 @@ import { state } from './store.js';
 const NOTICE_KEY = 'tritobol.authNotice';
 const PREFILL_KEY = 'tritobol.prefillEmail';
 
+function sessionGet(k) { try { return globalThis.sessionStorage?.getItem(k) || ''; } catch { return ''; } }
+function sessionSet(k, v) { try { globalThis.sessionStorage?.setItem(k, v); } catch {} }
+function sessionRemove(k) { try { globalThis.sessionStorage?.removeItem(k); } catch {} }
+
 export const authState = { ready: false, user: null };
 
 export function hasAppSession() {
@@ -157,8 +161,8 @@ export function initAuth() {
       });
       $('signup-password').value = '';
       $('signup-confirm').value = '';
-      sessionStorage.setItem(PREFILL_KEY, email);
-      sessionStorage.setItem(NOTICE_KEY, created.message || 'Your account has been created successfully. Please sign in.');
+      sessionSet(PREFILL_KEY, email);
+      sessionSet(NOTICE_KEY, created.message || 'Your account has been created successfully. Please sign in.');
       location.hash = '#/signin';
     } catch (error) {
       $('signup-status').textContent = friendly(error);
@@ -212,16 +216,16 @@ export function initContact() {
 
 export function prepareAuthScreen() {
   refreshAccount();
-  const notice = sessionStorage.getItem(NOTICE_KEY) || '';
+  const notice = sessionGet(NOTICE_KEY);
   if (notice) {
     shownNotice = notice;
-    sessionStorage.removeItem(NOTICE_KEY);
+    sessionRemove(NOTICE_KEY);
   }
   const banner = $('signin-banner');
   if (banner) banner.textContent = shownNotice;
-  const email = sessionStorage.getItem(PREFILL_KEY) || '';
+  const email = sessionGet(PREFILL_KEY);
   if (email && $('signin-email') && !$('signin-email').value) {
     $('signin-email').value = email;
-    sessionStorage.removeItem(PREFILL_KEY);
+    sessionRemove(PREFILL_KEY);
   }
 }
