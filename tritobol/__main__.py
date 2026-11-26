@@ -225,6 +225,18 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _load_tokenizer(args: argparse.Namespace) -> Optional[HuggingFaceTokenizer]:
+    """Load --tokenizer, turning the tokenizers library's bare Exception into a clean CLI error."""
+    if not args.tokenizer:
+        return None
+    try:
+        return HuggingFaceTokenizer(args.tokenizer, model_name=args.model_name)
+    except (OSError, ValueError):
+        raise
+    except Exception as exc:  # tokenizers raises a bare Exception for unreadable or invalid files
+        raise ValueError(f"could not load tokenizer {args.tokenizer!r}: {exc}") from exc
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         # Keep redirected/piped output as UTF-8 with LF line endings on Windows.
@@ -269,11 +281,7 @@ def main(argv: Optional[list[str]] = None) -> int:
                 )
             if args.model_name and not args.tokenizer:
                 raise ValueError("--model-name requires --tokenizer")
-            tokenizer = (
-                HuggingFaceTokenizer(args.tokenizer, model_name=args.model_name)
-                if args.tokenizer
-                else None
-            )
+            tokenizer = _load_tokenizer(args)
             report = process_path(
                 args.input,
                 args.output,
@@ -307,11 +315,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         text = _read_input(args.input)
         if args.model_name and not args.tokenizer:
             raise ValueError("--model-name requires --tokenizer")
-        tokenizer = (
-            HuggingFaceTokenizer(args.tokenizer, model_name=args.model_name)
-            if args.tokenizer
-            else None
-        )
+        tokenizer = _load_tokenizer(args)
         result = Tritobol(
             tokenizer=tokenizer,
             protect_code_blocks=not args.no_protect_code_blocks,

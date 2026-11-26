@@ -92,6 +92,7 @@ def create_app(test_config: Optional[Dict[str, Any]] = None) -> Flask:
         app.config.update(test_config)
 
     database_path = _database_path(app.config)
+    app.config["DATABASE_PATH"] = str(database_path)
 
     if not app.config.get("SECRET_KEY"):
         app.config["SECRET_KEY"] = (

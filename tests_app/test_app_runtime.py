@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from conftest import SAMPLE
+from tests_app.sample_data import SAMPLE
 from tritobol import Tritobol
 
 REPO = Path(__file__).resolve().parents[1]
@@ -27,7 +27,8 @@ def free_port():
 
 
 def launch(port, cwd):
-    proc = subprocess.Popen([sys.executable, "-m", "tritobol_app", "--no-browser", "--port", str(port)], cwd=cwd, env=ENV,
+    env = {**ENV, "TRITOBOL_DB": str(Path(cwd) / "tritobol.sqlite")}
+    proc = subprocess.Popen([sys.executable, "-m", "tritobol_app", "--no-browser", "--port", str(port)], cwd=cwd, env=env,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     for _ in range(60):
         try:
@@ -80,7 +81,8 @@ def test_port_in_use_falls_back_to_next_port(tmp_path):
         blocker.bind(("127.0.0.1", 0))
         blocker.listen()
         busy = blocker.getsockname()[1]
-        proc = subprocess.Popen([sys.executable, "-m", "tritobol_app", "--no-browser", "--port", str(busy)], cwd=tmp_path, env=ENV,
+        proc = subprocess.Popen([sys.executable, "-m", "tritobol_app", "--no-browser", "--port", str(busy)], cwd=tmp_path,
+                                env={**ENV, "TRITOBOL_DB": str(tmp_path / "tritobol.sqlite")},
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         try:
             time.sleep(3)
@@ -103,15 +105,69 @@ def test_missing_flask_gives_actionable_message():
     assert "Traceback" not in p.stderr
 
 
+# A hard-coded credential: a password/api_key/secret-style name assigned a single unbroken string of 8+
+# characters. Real credentials contain no whitespace, while user-facing text ("Enter your password.") does,
+# and member accesses such as errors.password are validation messages, not secrets.
+HARDCODED_CREDENTIAL = re.compile(
+    r"""(?ix)
+    (?<![\w.])                                   # a bare name, not obj.password / errors.password
+    [\w-]*(?:password|passwd|api[_-]?key|secret)\w*   # password, DB_PASSWORD, api_key, SECRET_KEY, ...
+    ["']?\s*[:=]\s*                              # assignment or object/dict key
+    (["'])[^\s"']{8,}\1                           # one unbroken literal, no spaces
+    """
+)
+SECRET_PATTERNS = [
+    r"sk-[A-Za-z0-9]{16,}",                       # OpenAI-style API keys
+    r"AKIA[0-9A-Z]{16}",                          # AWS access keys
+    r"ghp_[A-Za-z0-9]{20,}",                      # GitHub personal access tokens
+    r"-----BEGIN [A-Z ]*PRIVATE KEY",             # private-key headers
+    HARDCODED_CREDENTIAL.pattern,
+]
+
+
+@pytest.mark.parametrize("line", [
+    "password = 'hunter2hunter2'",
+    'DB_PASSWORD = "S3cretValue99"',
+    "api_key: 'abcd1234efgh5678'",
+    "const apiKey = 'abcd1234efgh5678';",
+    'secret="s3cretvalue99"',
+    "SECRET_KEY = 'a-long-hardcoded-key-value'.replace(' ', '')",
+    "{'password': 'Longerphrase1'}",
+])
+def test_secret_pattern_flags_hardcoded_credentials(line):
+    assert HARDCODED_CREDENTIAL.search(line), line
+
+
+@pytest.mark.parametrize("line", [
+    "errors.password = 'Enter your password.'",
+    "errors.password = 'Use at least 12 characters.'",
+    "errors.password = issues.join(' ')",
+    "const password = document.getElementById('signin-password').value;",
+    "password: str = Field(min_length=12)",
+    "if not password: return 'Enter your password.'",
+    "label = 'Password'",
+    "app.config['SECRET_KEY'] = secret_key",
+    "secret = os.environ.get('TRITOBOL_SECRET')",
+    "api_key = 'Enter your API key.'",
+])
+def test_secret_pattern_ignores_validation_text_and_variable_names(line):
+    assert not HARDCODED_CREDENTIAL.search(line), line
+
+
 def test_no_secrets_or_external_urls_in_application_source():
-    patterns = [r"sk-[A-Za-z0-9]{16,}", r"AKIA[0-9A-Z]{16}", r"ghp_[A-Za-z0-9]{20,}", r"-----BEGIN [A-Z ]*PRIVATE KEY", r"(?i)(password|api_key|secret)\s*[:=]\s*['\"][^'\"]{8,}"]
     for f in (REPO / "tritobol_app").rglob("*"):
         if f.suffix in (".py", ".js", ".html", ".css", ".svg") and f.is_file():
             text = f.read_text(encoding="utf-8")
-            for pat in patterns:
+            for pat in SECRET_PATTERNS:
                 assert not re.search(pat, text), f"{f.name} matches {pat}"
             urls = [u for u in re.findall(r"https?://[^\s\"'<>)]+", text) if "w3.org" not in u and "127.0.0.1" not in u and "{HOST}" not in u]
             assert urls == [], f"{f.name} references external URLs: {urls}"
+
+
+def test_secret_scan_still_catches_known_key_formats():
+    samples = ["sk-" + "a1B2c3D4" * 3, "AKIA" + "ABCDEFGHIJKLMNOP", "ghp_" + "a1B2c3D4e5F6g7H8i9J0k1", "-----BEGIN RSA PRIVATE KEY-----"]
+    for sample in samples:
+        assert any(re.search(p, sample) for p in SECRET_PATTERNS[:4]), sample
 
 
 def test_service_delegates_to_the_real_engine(client, hdr, monkeypatch):

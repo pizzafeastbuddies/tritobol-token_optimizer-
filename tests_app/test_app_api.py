@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from conftest import SAMPLE
+from tests_app.sample_data import SAMPLE
 from tritobol import Tritobol
 from tritobol.tokenizer import get_default_tokenizer
 

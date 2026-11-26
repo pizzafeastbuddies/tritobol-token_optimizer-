@@ -109,7 +109,9 @@ def test_utf8_file_loading_original_unchanged(page, tmp_path):
     ("blank.txt", b"  \n ", "whitespace"),
     ("bin.txt", b"ab\x00cd", "binary"),
     ("pic.png", b"\x89PNG....", "Unsupported"),
-    ("huge.txt", b"a" * (2 * 1024 * 1024 + 10), "limit"),
+    # Short id: pytest stores the node id in PYTEST_CURRENT_TEST, and Windows
+    # rejects environment values longer than 32,767 characters.
+    pytest.param("huge.txt", b"a" * (2 * 1024 * 1024 + 10), "limit", id="huge.txt-over-limit"),
 ])
 def test_invalid_files_show_error_and_keep_text(page, name, data, fragment):
     goto(page, "optimize")

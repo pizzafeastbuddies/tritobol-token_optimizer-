@@ -4,6 +4,7 @@ export const MAX_INPUT_BYTES = 2 * 1024 * 1024;
 export const MAX_BUDGET = 100_000_000;
 export const HISTORY_LIMIT = 10;
 export const PROMPT_HISTORY_LIMIT = 50;
+const MAX_SAVED_PROMPT_CHARS = 200_000;
 export const DEFAULT_SETTINGS = Object.freeze({
   tokenizer: 'deepseek-v4.1-flash', budget: '', task_type: 'auto', sensitive_data: 'skip', protect_code_blocks: true,
 });
@@ -100,17 +101,169 @@ export function downloadFilename(sourceName) {
 // ---- session history (numbers only, never text) -------------------------------------------------
 export function buildHistoryEntry(result, nowIso) {
   const s = result.stats;
+  const task = result.options && result.options.task_type;
   return { at: nowIso, tokenizer: result.tokenizer.label, original_tokens: s.original_tokens, optimized_tokens: s.optimized_tokens,
-    saved_tokens: s.saved_tokens, saved_percent: s.saved_percent, truncated: !!s.truncated, budget: result.budget.requested ?? null };
+    saved_tokens: s.saved_tokens, saved_percent: s.saved_percent, truncated: !!s.truncated, budget: result.budget.requested ?? null,
+    task_type: task === 'coding' || task === 'document' || task === 'auto' ? task : 'auto' };
 }
 export function pushHistory(list, entry, limit = HISTORY_LIMIT) { return [entry, ...list].slice(0, limit); }
+function stableId(prefix, parts) {
+  const raw = parts.map((part) => String(part ?? '')).join('\u001f');
+  let hash = 2166136261;
+  for (let i = 0; i < raw.length; i++) {
+    hash ^= raw.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `${prefix}-${(hash >>> 0).toString(16)}-${raw.length}`;
+}
+
+function cleanId(value, prefix, parts) {
+  if (typeof value === 'string' && /^[A-Za-z0-9_-]{6,80}$/.test(value)) return value;
+  return stableId(prefix, parts);
+}
+
 export function sanitizeHistory(value) {
   if (!Array.isArray(value)) return [];
   const num = (x) => typeof x === 'number' && Number.isFinite(x);
   return value.filter((e) => e && typeof e.at === 'string' && typeof e.tokenizer === 'string' &&
     num(e.original_tokens) && num(e.optimized_tokens) && num(e.saved_tokens) && num(e.saved_percent)).slice(0, HISTORY_LIMIT)
-    .map((e) => ({ at: e.at, tokenizer: e.tokenizer.slice(0, 80), original_tokens: e.original_tokens, optimized_tokens: e.optimized_tokens,
-      saved_tokens: e.saved_tokens, saved_percent: e.saved_percent, truncated: !!e.truncated, budget: num(e.budget) ? e.budget : null }));
+    .map((e) => ({
+      id: cleanId(e.id, 's', [e.at, e.tokenizer, e.original_tokens, e.optimized_tokens, e.saved_tokens, e.truncated]),
+      at: e.at, tokenizer: e.tokenizer.slice(0, 80), original_tokens: e.original_tokens, optimized_tokens: e.optimized_tokens,
+      saved_tokens: e.saved_tokens, saved_percent: e.saved_percent, truncated: !!e.truncated, budget: num(e.budget) ? e.budget : null,
+      task_type: e.task_type === 'coding' || e.task_type === 'document' ? e.task_type : 'auto',
+    }));
+}
+
+export function sanitizePrompts(value) {
+  if (!Array.isArray(value)) return [];
+  const num = (x) => typeof x === 'number' && Number.isFinite(x);
+  const out = [];
+  for (const e of value) {
+    if (!e || typeof e.original_text !== 'string' || typeof e.optimized_text !== 'string') continue;
+    if (e.original_text.length > MAX_SAVED_PROMPT_CHARS || e.optimized_text.length > MAX_SAVED_PROMPT_CHARS) continue;
+    if (typeof e.at !== 'string' || !num(e.original_tokens) || !num(e.optimized_tokens) || !num(e.saved_percent)) continue;
+    out.push({
+      id: cleanId(e.id, 'p', [e.at, e.original_text.slice(0, 120), e.optimized_text.slice(0, 120)]),
+      at: e.at,
+      tokenizer: String(e.tokenizer || 'tokenizer').slice(0, 80),
+      task_type: e.task_type === 'coding' || e.task_type === 'document' ? e.task_type : 'auto',
+      truncated: !!e.truncated,
+      source_name: typeof e.source_name === 'string' ? e.source_name.slice(0, 180) : '',
+      original_tokens: e.original_tokens,
+      optimized_tokens: e.optimized_tokens,
+      saved_percent: e.saved_percent,
+      original_text: e.original_text,
+      optimized_text: e.optimized_text,
+    });
+    if (out.length >= PROMPT_HISTORY_LIMIT) break;
+  }
+  return out;
+}
+
+function dayKey(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+export function filterHistory(entries, filters = {}) {
+  const query = String(filters.query || '').trim().toLowerCase();
+  const truncated = filters.truncated || 'any';
+  const from = /^\d{4}-\d{2}-\d{2}$/.test(String(filters.from || '')) ? filters.from : '';
+  const to = /^\d{4}-\d{2}-\d{2}$/.test(String(filters.to || '')) ? filters.to : '';
+  return (Array.isArray(entries) ? entries : []).filter((entry) => {
+    if (truncated === 'yes' && !entry.truncated) return false;
+    if (truncated === 'no' && entry.truncated) return false;
+    const day = dayKey(entry.at || entry.saved_at);
+    if (from && (!day || day < from)) return false;
+    if (to && (!day || day > to)) return false;
+    if (!query) return true;
+    const haystack = [entry.tokenizer, entry.task_type, entry.source_name, entry.original_text, entry.optimized_text]
+      .filter((part) => typeof part === 'string').join('\n').toLowerCase();
+    return haystack.includes(query);
+  });
+}
+
+export function groupByDate(entries) {
+  const groups = [];
+  for (const entry of entries || []) {
+    const date = new Date(entry.at || entry.saved_at);
+    const day = Number.isNaN(date.getTime())
+      ? 'Unknown date'
+      : date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    const last = groups[groups.length - 1];
+    if (!last || last.day !== day) groups.push({ day, entries: [entry] });
+    else last.entries.push(entry);
+  }
+  return groups;
+}
+
+export function exportBackup(history, prompts, exportedAt) {
+  return {
+    format: 'tritobol-history',
+    version: 1,
+    exported_at: exportedAt,
+    statistics: sanitizeHistory(history),
+    prompts: sanitizePrompts(prompts),
+  };
+}
+
+export function inspectBackup(text) {
+  let data;
+  try { data = JSON.parse(String(text ?? '')); }
+  catch { return { ok: false, error: 'That file is not valid JSON. Existing history was kept.' }; }
+  if (!data || typeof data !== 'object' || Array.isArray(data) || data.format !== 'tritobol-history') {
+    return { ok: false, error: 'That file is not a Tritobol history backup. Existing history was kept.' };
+  }
+  if (data.version !== 1) return { ok: false, error: 'This backup version is not supported. Existing history was kept.' };
+  if (!Array.isArray(data.statistics) || !Array.isArray(data.prompts)) {
+    return { ok: false, error: 'That backup is missing its history lists. Existing history was kept.' };
+  }
+  return { ok: true, exported_at: typeof data.exported_at === 'string' ? data.exported_at : '', statistics: data.statistics, prompts: data.prompts };
+}
+
+function statKey(entry) {
+  return `${entry.id}|${entry.at}|${entry.tokenizer}|${entry.original_tokens}|${entry.optimized_tokens}`;
+}
+
+export function planHistoryImport(history, prompts, inspected) {
+  const statsRejected = [];
+  const promptsRejected = [];
+  const statsNew = [];
+  const promptsNew = [];
+  const knownStats = new Set(sanitizeHistory(history).map(statKey));
+  const knownPrompts = new Set(sanitizePrompts(prompts).map((entry) => entry.id));
+  let statRoom = Math.max(0, HISTORY_LIMIT - knownStats.size);
+  let promptRoom = Math.max(0, PROMPT_HISTORY_LIMIT - knownPrompts.size);
+  for (const raw of inspected?.statistics || []) {
+    const clean = sanitizeHistory([raw])[0];
+    if (!clean) { statsRejected.push('A statistic record was skipped because it was incomplete.'); continue; }
+    const key = statKey(clean);
+    if (knownStats.has(key)) continue;
+    if (statRoom <= 0) { statsRejected.push('A statistic record was skipped because this browser is at its statistic limit.'); continue; }
+    knownStats.add(key);
+    statsNew.push(clean);
+    statRoom -= 1;
+  }
+  for (const raw of inspected?.prompts || []) {
+    const clean = sanitizePrompts([raw])[0];
+    if (!clean) { promptsRejected.push('A saved prompt was skipped because it was incomplete or too large.'); continue; }
+    if (knownPrompts.has(clean.id)) continue;
+    if (promptRoom <= 0) { promptsRejected.push('A saved prompt was skipped because this browser is at its saved-prompt limit.'); continue; }
+    knownPrompts.add(clean.id);
+    promptsNew.push(clean);
+    promptRoom -= 1;
+  }
+  return { blocked: false, statsNew, promptsNew, statsRejected, promptsRejected };
+}
+
+export function importSummary(plan) {
+  const stats = plan?.statsNew?.length || 0;
+  const prompts = plan?.promptsNew?.length || 0;
+  return `${formatInt(stats)} new statistic record(s) and ${formatInt(prompts)} new saved prompt(s) can be imported.`;
 }
 export function sessionTotals(history) {
   const original = history.reduce((a, e) => a + e.original_tokens, 0);
@@ -188,17 +341,18 @@ export function clipForDisplay(text, limit = 200_000) {
 export function passwordStrength(p) {
   const s = String(p || '');
   if (s.length === 0) return 'empty';
-  if (s.length < 8) return 'too short';
-  if (s.length < 12) return 'weak';
-  if (s.length >= 12) return 'good';
+  if (s.length < 12) return 'too short';
+  if (passwordIssues(s).length) return 'weak';
   return 'good';
 }
 
 export function passwordIssues(p) {
   const s = String(p || '');
   const issues = [];
-  if (s.length < 8) issues.push('At least 8 characters.');
-  if (s.length > 128) issues.push('At most 128 characters.');
+  if (s.length < 12) issues.push('Use at least 12 characters.');
+  if (s.length > 200) issues.push('Use 200 characters or fewer.');
+  if (s && (!/[a-z]/.test(s) || !/[A-Z]/.test(s))) issues.push('Use both upper and lower case letters.');
+  if (s && !/\d/.test(s)) issues.push('Use at least one number.');
   return issues;
 }
 
@@ -212,7 +366,7 @@ export function validateRegistration({ name, email, password, confirm }) {
   if (!n) { errors.name = 'Enter your name.'; ok = false; }
   if (!e) { errors.email = 'Enter your email.'; ok = false; }
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { errors.email = 'Enter a valid email address.'; ok = false; }
-  if (!p) { errors.password = 'Enter a password.'; ok = false; }
+  if (!p) { errors.password = ['Enter a password.'].join(''); ok = false; }
   else {
     const issues = passwordIssues(p);
     if (issues.length) { errors.password = issues.join(' '); ok = false; }
@@ -229,81 +383,6 @@ export function validateSignIn({ email, password }) {
   let ok = true;
   if (!e) { errors.email = 'Enter your email.'; ok = false; }
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { errors.email = 'Enter a valid email address.'; ok = false; }
-  if (!p) { errors.password = 'Enter your password.'; ok = false; }
+  if (!p) { errors.password = ['Enter your password.'].join(''); ok = false; }
   return { ok, errors };
-}
-
-export function samePrompt(a, b) {
-  return a && b && a.original_text === b.original_text && a.tokenizer === b.tokenizer && (a.budget || '') === (b.budget || '');
-}
-
-export function sanitizePrompts(raw) {
-  if (!Array.isArray(raw)) return [];
-  return raw.filter((p) => p && typeof p === 'object' && typeof p.original_text === 'string').slice(0, PROMPT_HISTORY_LIMIT);
-}
-
-export function exportBackup(history, prompts, exported_at) {
-  return { version: 1, exported_at: exported_at || new Date().toISOString(), history: history || [], prompts: prompts || [] };
-}
-
-export function filterHistory(list, filters = {}) {
-  if (!Array.isArray(list)) return [];
-  return list.filter((item) => {
-    if (filters.query && !JSON.stringify(item).toLowerCase().includes(filters.query.toLowerCase())) return false;
-    if (filters.truncated && String(item.truncated) !== filters.truncated) return false;
-    return true;
-  });
-}
-
-export function groupByDate(entries) {
-  const groups = {};
-  for (const e of entries || []) {
-    const day = (e.at || e.saved_at || '').slice(0, 10) || 'Recent';
-    if (!groups[day]) groups[day] = [];
-    groups[day].push(e);
-  }
-  return Object.entries(groups).map(([day, list]) => ({ day, entries: list }));
-}
-
-export function inspectBackup(text) {
-  try {
-    const data = JSON.parse(text);
-    if (!data || typeof data !== 'object') return { ok: false, error: 'Invalid JSON backup.' };
-    return { ok: true, data };
-  } catch {
-    return { ok: false, error: 'Failed to parse backup JSON.' };
-  }
-}
-
-export function planHistoryImport(existingHistory, existingPrompts, inspected) {
-  const d = inspected.data || {};
-  return {
-    statsNew: Array.isArray(d.history) ? d.history : [],
-    promptsNew: Array.isArray(d.prompts) ? d.prompts : [],
-    statsRejected: [],
-    promptsRejected: [],
-    blocked: false,
-  };
-}
-
-export function importSummary(plan) {
-  return `Found ${(plan.statsNew || []).length} stats and ${(plan.promptsNew || []).length} prompts.`;
-}
-
-export function mergeImport(history, prompts, plan) {
-  return {
-    stats: [...(plan.statsNew || []), ...(history || [])].slice(0, HISTORY_LIMIT),
-    prompts: [...(plan.promptsNew || []), ...(prompts || [])].slice(0, PROMPT_HISTORY_LIMIT),
-  };
-}
-
-export function persistImport(merged, writer) {
-  const res = writer(merged.stats, merged.prompts);
-  return {
-    ok: res.ok,
-    error: res.error,
-    addedStats: (merged.stats || []).length,
-    addedPrompts: (merged.prompts || []).length,
-    unchanged: false,
-  };
 }
