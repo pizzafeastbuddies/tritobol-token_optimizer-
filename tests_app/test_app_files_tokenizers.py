@@ -43,7 +43,9 @@ def test_load_strips_bom_only(client, hdr):
     ("bin.txt", b"abc\x00def", 400, "binary"),
     ("pic.png", b"\x89PNG", 415, "Unsupported"),
     ("noext", b"hello", 415, "Unsupported"),
-    ("big.txt", b"a" * (MAX_INPUT_BYTES + 1), 413, "limit"),
+    # Short id: pytest stores the node id in PYTEST_CURRENT_TEST, and Windows
+    # rejects environment values longer than 32,767 characters.
+    pytest.param("big.txt", b"a" * (MAX_INPUT_BYTES + 1), 413, "limit", id="big.txt-over-limit"),
 ])
 def test_load_errors(client, hdr, name, data, status, fragment):
     r = upload(client, hdr, "/api/load-file", name, data)
