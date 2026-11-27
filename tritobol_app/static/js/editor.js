@@ -4,16 +4,6 @@ import { MAX_INPUT_BYTES, formatBytes, formatInt, utf8Bytes, validateBudget, val
 import { renderResult } from './results.js';
 import { setResult, state } from './store.js';
 
-export function loadDraft(text, filename = null) {
-  const input = $('input-text');
-  if (input) {
-    input.value = text || '';
-    loadedName = filename || null;
-    updateCounts();
-  }
-  location.hash = '#/optimize';
-}
-
 let controller = null, timer = null, loadedName = null;
 
 function setError(id, message, inputId) {
@@ -114,6 +104,22 @@ export async function runOptimize() {
     else if (e.field === 'text') setError('input-error', e.message, 'input-text');
     else { $('run-status').className = 'err-text'; $('run-status').textContent = e.message; }
   } finally { clearInterval(timer); setBusy(false); controller = null; }
+}
+
+export function loadDraft(text, name = null) {
+  const ta = $('input-text');
+  if (!ta) return;
+  ta.value = typeof text === 'string' ? text : '';
+  loadedName = name || null;
+  const info = $('file-info');
+  if (info) {
+    info.hidden = !name;
+    if (name) info.textContent = `Reopened ${name} from prompt history. The file on disk is never modified.`;
+  }
+  setError('input-error', '', 'input-text');
+  updateCounts();
+  if (!String(location.hash || '').includes('optimize')) location.hash = '#/optimize';
+  ta.focus();
 }
 
 export function initEditor() {

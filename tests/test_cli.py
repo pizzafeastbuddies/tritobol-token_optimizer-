@@ -159,5 +159,50 @@ class CliPreviewTests(unittest.TestCase):
         self.assertIn("--diff cannot be combined with --output", stderr.getvalue())
 
 
+
+class CliTokenizerErrorTests(unittest.TestCase):
+    """An unusable --tokenizer file is a user error: clean message, exit 1, never a traceback."""
+
+    def _run(self, argv: list[str], stdin_text: str = "hello\n") -> tuple[int, str, str]:
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with patch("sys.stdin", io.StringIO(stdin_text)), redirect_stdout(stdout), redirect_stderr(stderr):
+            status = main(argv)
+        return status, stdout.getvalue(), stderr.getvalue()
+
+    def test_invalid_tokenizer_json_is_reported_cleanly(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            bad = Path(tmp) / "bad.json"
+            bad.write_text("not json", encoding="utf-8")
+            status, out, err = self._run(["--tokenizer", str(bad), "--no-stats"])
+        self.assertEqual(status, 1)
+        self.assertEqual(out, "")
+        self.assertIn("tritobol: error: could not load tokenizer", err)
+        self.assertNotIn("Traceback", err)
+
+    def test_missing_tokenizer_file_is_reported_cleanly(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            status, out, err = self._run(["--tokenizer", str(Path(tmp) / "missing.json"), "--no-stats"])
+        self.assertEqual(status, 1)
+        self.assertEqual(out, "")
+        self.assertIn("tritobol: error: could not load tokenizer", err)
+
+    def test_invalid_tokenizer_in_project_mode_is_reported_cleanly(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "src").mkdir()
+            (root / "src" / "a.txt").write_text("a a a\n", encoding="utf-8")
+            bad = root / "bad.json"
+            bad.write_text("{", encoding="utf-8")
+            status, _out, err = self._run(["--tokenizer", str(bad), str(root / "src"), "-o", str(root / "out")])
+            self.assertFalse((root / "out").exists(), "nothing is written when the tokenizer cannot load")
+        self.assertEqual(status, 1)
+        self.assertIn("could not load tokenizer", err)
+
+    def test_valid_default_tokenizer_still_works(self) -> None:
+        status, out, _err = self._run(["--no-stats"], "Hello hello.\n\nHello hello.\n")
+        self.assertEqual(status, 0)
+        self.assertIn("Hello hello.", out)
+
+
 if __name__ == "__main__":
     unittest.main()

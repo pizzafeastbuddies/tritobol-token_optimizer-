@@ -2,7 +2,7 @@ import time
 
 from hypothesis import HealthCheck, given, settings, strategies as st
 
-from conftest import SAMPLE
+from tests_app.sample_data import SAMPLE
 from tritobol import Tritobol
 from tritobol_app.diffing import MAX_DIFF_LINES, build_diff
 

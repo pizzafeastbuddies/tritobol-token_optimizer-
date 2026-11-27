@@ -4,7 +4,7 @@ import { renderDiff } from './diffview.js';
 import {
   clipForDisplay, codePointLength, downloadFilename, formatInt, formatPercent, savingsSummary, sensitiveSummary, truncationSummary,
 } from './lib.js';
-import { state } from './store.js';
+import { saveLocalPrompt, state } from './store.js';
 
 const TABS = ['compare', 'diff', 'details'];
 let shown = null;
@@ -94,6 +94,37 @@ export function renderResult(result, sourceText, sourceName) {
 
 function status(msg, ok) { const el = $('export-status'); el.textContent = msg; el.className = ok ? 'ok-text' : 'err-text'; }
 
+export function renderResultsPage() {
+  const empty = $('results-empty');
+  const page = $('results-page');
+  if (!empty || !page) return;
+  const { result, sourceText, sourceName } = state;
+  if (!result || typeof sourceText !== 'string') {
+    empty.hidden = false;
+    page.hidden = true;
+    clear(page);
+    return;
+  }
+  empty.hidden = true;
+  page.hidden = false;
+  const banners = h('div', {});
+  banners.append(banner(truncationSummary(result)));
+  const sens = sensitiveSummary(result);
+  if (sens) banners.append(banner(sens));
+  const diff = h('div', {});
+  renderDiff(diff, result.diff);
+  clear(page).append(
+    banners,
+    h('div', { class: 'tiles' }, ...tiles(result)),
+    h('p', { class: 'fineprint' }, sourceName ? `Source: ${sourceName}` : 'The latest run in this tab.'),
+    h('h2', {}, 'Compare'),
+    h('div', { class: 'compare' }, pane('Original', sourceText, result.stats.original_tokens), pane('Optimized', result.text, result.stats.optimized_tokens)),
+    h('h2', {}, 'Diff'),
+    diff,
+    h('p', {}, h('a', { class: 'btn', href: '#/optimize' }, 'Back to the optimizer')),
+  );
+}
+
 export function initResults() {
   TABS.forEach((t, i) => {
     $(`tab-${t}`).addEventListener('click', () => selectTab(t));
@@ -124,11 +155,15 @@ export function initResults() {
     try { await navigator.clipboard.writeText(shown.result.text); status('Optimized text copied to the clipboard.', true); }
     catch { status('Copy was blocked by the browser. Use Download instead.', false); }
   });
+  $('btn-save-prompt')?.addEventListener('click', () => {
+    const note = $('save-prompt-status');
+    const say = (message, ok) => { if (!note) return; note.textContent = message; note.className = ok ? 'ok-text' : 'err-text'; };
+    if (!$('save-prompt-ack')?.checked) {
+      say('Tick the box to confirm that the original and optimized text will be stored in this browser.', false);
+      return;
+    }
+    const saved = saveLocalPrompt();
+    say(saved.ok ? 'Prompt saved in this browser. It appears in Prompt history and is not sent anywhere.' : saved.error, saved.ok);
+  });
 }
-export function renderResultsPage() {
-  if (state.result && state.sourceText) {
-    renderResult(state.result, state.sourceText, state.sourceName);
-  }
-}
-
 export const _state = state;

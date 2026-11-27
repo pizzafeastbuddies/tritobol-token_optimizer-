@@ -1,6 +1,6 @@
 import { $, clear, h } from './dom.js';
 import { validateBudget } from './lib.js';
-import { clearHistory, resetSettings, saveSettings, state } from './store.js';
+import { clearHistory, currentTheme, resetSettings, saveSettings, state } from './store.js';
 
 const say = (msg, ok = true) => { const el = $('set-status'); el.textContent = msg; el.className = ok ? 'ok-text' : 'err-text'; };
 
@@ -9,6 +9,7 @@ export function renderSettings() {
   state.tokenizers.forEach((t) => sel.append(h('option', { value: t.id, disabled: !t.available }, t.available ? t.label : `${t.label} — unavailable`)));
   if ([...sel.options].some((o) => o.value === s.tokenizer)) sel.value = s.tokenizer;
   $('set-budget').value = s.budget; $('set-task').value = s.task_type; $('set-sensitive').value = s.sensitive_data; $('set-protect').checked = s.protect_code_blocks;
+  if ($('set-theme')) $('set-theme').value = currentTheme();
 }
 
 export function initSettings(onChange) {
@@ -21,5 +22,16 @@ export function initSettings(onChange) {
     say('Settings saved in this browser.'); onChange();
   });
   $('btn-reset-settings').addEventListener('click', () => { resetSettings(); renderSettings(); say('Settings reset to defaults.'); onChange(); });
-  $('btn-clear-history').addEventListener('click', () => { clearHistory(); say('Run history erased.'); onChange(); });
+  let eraseArmed = false;
+  $('btn-clear-history').addEventListener('click', () => {
+    if (!eraseArmed) {
+      eraseArmed = true;
+      say('Press Erase run history again to remove the statistic records. Saved prompts are left as they are.', false);
+      return;
+    }
+    eraseArmed = false;
+    clearHistory();
+    say('Run history erased.');
+    onChange();
+  });
 }
