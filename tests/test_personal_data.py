@@ -42,6 +42,45 @@ class PersonalDataTests(unittest.TestCase):
 
         self.assertEqual(_spans(text), [])
 
+    def test_phone_samples_by_country(self) -> None:
+        samples = {
+            "US": ["+1 (415) 555-0132", "415-555-0132", "415.555.0132",
+                   "(415) 555-0132", "+14155550132"],
+            "UK": ["+44 7700 900123", "07700 900123", "+44 20 7946 0958",
+                   "020 7946 0958"],
+            "CN": ["+86 138 0013 8000", "13800138000", "+86 13800138000",
+                   "138-0013-8000"],
+            "KR": ["+82 10-1234-5678", "010-1234-5678", "+82 2-312-3456",
+                   "01012345678"],
+            "JP": ["+81 90-1234-5678", "090-1234-5678", "+81 3-1234-5678",
+                   "03-1234-5678"],
+            "DE": ["+49 151 12345678", "0151 12345678", "+49 30 23125 123",
+                   "030 23125123"],
+            "FR": ["+33 6 12 34 56 78", "06 12 34 56 78", "+33 1 99 00 12 34",
+                   "0612345678"],
+            "AU": ["+61 491 570 156", "0491 570 156", "+61 2 5550 1234",
+                   "(02) 5550 1234"],
+            "IN": ["+91 98765 43210", "098765 43210", "+91-98765-43210",
+                   "9876543210"],
+            "SG": ["+65 6123 4567", "+65 9123 4567", "6123 4567"],
+        }
+        for country, numbers in samples.items():
+            for number in numbers:
+                with self.subTest(country=country, number=number):
+                    self.assertEqual(
+                        _spans(f"Call {number} now"), [("PHONE", number)]
+                    )
+
+    def test_bare_ids_and_counters_are_not_phones(self) -> None:
+        for text in (
+            "Order 12345678 shipped",
+            "Ticket #1234567 closed",
+            "Total 91234567 bytes",
+            "Build 2026112 passed",
+        ):
+            with self.subTest(text=text):
+                self.assertEqual(_spans(text), [])
+
     def test_email_digits_are_not_reported_as_phone(self) -> None:
         self.assertEqual(
             _spans("Write to user2024555123@mail.com"),

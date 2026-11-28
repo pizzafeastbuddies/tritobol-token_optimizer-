@@ -72,6 +72,11 @@ def _is_phone(candidate: str) -> bool:
         return False
     if _DATE_RE.fullmatch(text) or _VERSION_OR_IP_RE.fullmatch(text):
         return False
+    # A short run of bare digits (order IDs, counters) is not a phone unless
+    # it has a leading 0 (national trunk prefix). Known limit: bare
+    # 8-digit numbers such as Singapore's are not detected.
+    if text.isdigit() and len(text) < 10 and not text.startswith("0"):
+        return False
     return True
 
 
