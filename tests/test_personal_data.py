@@ -71,6 +71,57 @@ class PersonalDataTests(unittest.TestCase):
             [("PERSONAL_NAME", "John Smith")],
         )
 
+    def test_sample_names_by_country(self) -> None:
+        samples = {
+            "CN": ["Shizhe Liang", "Wei Zhang", "Yuchen Wang"],
+            "US": ["William Smith", "James Johnson", "Emily Brown"],
+            "UK": ["Oliver Wilson", "Harry Taylor", "Charlotte Davis"],
+            "KR": ["Jiho Kim", "Minjun Park", "Seoyeon Lee"],
+            "JP": ["Haruto Sato", "Yuki Tanaka", "Aoi Suzuki"],
+            "IN": ["Arjun Sharma", "Priya Patel", "Rahul Kumar"],
+            "FR": ["Louis Martin", "Emma Bernard", "Hugo Dubois"],
+            "DE": ["Lukas M\u00fcller", "Anna Schmidt", "Felix Weber"],
+            "ES": ["Alejandro Garc\u00eda", "Lucia Martinez", "Pablo Rodriguez"],
+            "IT": ["Luca Rossi", "Sofia Romano", "Marco Ferrari"],
+            "BR": ["Jo\u00e3o Silva", "Maria Santos", "Gabriel Oliveira"],
+            "RU": ["Alexander Ivanov", "Anna Smirnova", "Dmitry Petrov"],
+            "CA": ["Liam Anderson", "Olivia Clark", "Noah Thompson"],
+            "AU": ["Jack Williams", "Grace Thomas", "Ethan Walker"],
+            "MX": ["Diego Hern\u00e1ndez", "Sof\u00eda L\u00f3pez", "Mateo Gonz\u00e1lez"],
+            "NG": ["Chinedu Okafor", "Adaeze Nwosu", "Tunde Adeyemi"],
+            "ZA": ["Thabo Nkosi", "Naledi Mokoena", "Sipho Dlamini"],
+            "SG": ["Wei Ming Tan", "Jia Hui Lim", "Daniel Lee"],
+            "VN": ["Minh Nguyen", "Anh Tran", "Duc Pham"],
+            "TR": ["Mehmet Y\u0131lmaz", "Elif Kaya", "Emir Demir"],
+        }
+        for country, names in samples.items():
+            for name in names:
+                with self.subTest(country=country, name=name):
+                    self.assertEqual(
+                        _spans(f"Ask {name} about it."),
+                        [("PERSONAL_NAME", name)],
+                    )
+
+    def test_names_with_punctuation_and_several_people(self) -> None:
+        self.assertEqual(
+            _spans("Hello, Jo\u00e3o Silva!"), [("PERSONAL_NAME", "Jo\u00e3o Silva")]
+        )
+        self.assertEqual(
+            _spans("Priya Patel and Wei Ming Tan met."),
+            [("PERSONAL_NAME", "Priya Patel"), ("PERSONAL_NAME", "Wei Ming Tan")],
+        )
+
+    def test_common_words_and_places_are_not_names(self) -> None:
+        for text in (
+            "Mark my words.",
+            "The Green Park is open",
+            "Anna wrote to Smith",
+            "Priya  Patel",
+            "priya patel",
+        ):
+            with self.subTest(text=text):
+                self.assertEqual(_spans(text), [])
+
     def test_single_names_and_unknown_pairs_are_ignored(self) -> None:
         self.assertEqual(_spans("John went home."), [])
         self.assertEqual(_spans("Smith went home."), [])

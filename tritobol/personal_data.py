@@ -1,6 +1,9 @@
 """Local, redaction-safe detection of personal data: emails, phones and names.
 
 Findings carry kind and position only. They never store the matched text.
+
+Name detection is list based. It finds ``First Last`` and ``First Middle Last``
+when every part is a known name. It does not find names missing from the lists.
 """
 
 from __future__ import annotations
@@ -12,44 +15,60 @@ EMAIL = "EMAIL"
 PHONE = "PHONE"
 PERSONAL_NAME = "PERSONAL_NAME"
 
-# Small starter lists. Names are capitalized, as they appear in text.
+# Starter lists. Names are capitalized, as they appear in text. Accented names
+# use \u escapes so the file stays ASCII; the unaccented spelling is included
+# because people often drop accents.
 FIRST_NAMES = frozenset(
     {
-        "Aiden", "Ahmed", "Ali", "Amit", "Andrew", "Anna", "Anthony", "Ava",
-        "Ashley", "Barbara", "Charles", "Chen", "Daniel", "David", "Donald",
-        "Elizabeth", "Emily", "Emma", "Ethan", "Hannah", "Hui", "James",
-        "Jennifer", "Jessica", "John", "Joseph", "Joshua", "Jun", "Karen",
-        "Kenneth", "Li", "Lisa", "Linda", "Liam", "Lucas", "Mark", "Mary",
-        "Matthew", "Mei", "Michael", "Ming", "Mia", "Mohammed", "Nancy",
-        "Noah", "Olivia", "Patricia", "Paul", "Priya", "Raj", "Richard",
-        "Robert", "Sarah", "Sofia", "Steven", "Susan", "Thomas", "William",
-        "Wei", "Yan",
+        "Adaeze", "Ahmed", "Aiden", "Alejandro", "Alexander", "Ali", "Amit",
+        "Andrew", "Anh", "Anna", "Anthony", "Aoi", "Arjun", "Ashley", "Ava",
+        "Barbara", "Charles", "Charlotte", "Chen", "Chinedu", "Daniel", "David",
+        "Diego", "Dmitry", "Donald", "Duc", "Elif", "Elizabeth", "Emily", "Emir",
+        "Emma", "Ethan", "Felix", "Gabriel", "Grace", "Hannah", "Harry",
+        "Haruto", "Hugo", "Hui", "Jack", "James", "Jennifer", "Jessica", "Jia",
+        "Jiho", "Joao", "Jo\u00e3o", "John", "Joseph", "Joshua", "Jun", "Karen",
+        "Kenneth", "Li", "Liam", "Linda", "Lisa", "Louis", "Luca", "Lucas",
+        "Lucia", "Lukas", "Maria", "Mark", "Marco", "Mary", "Mateo", "Matthew",
+        "Mehmet", "Mei", "Mia", "Michael", "Ming", "Minh", "Minjun", "Mohammed",
+        "Nancy", "Naledi", "Noah", "Oliver", "Olivia", "Pablo", "Patricia",
+        "Paul", "Priya", "Raj", "Rahul", "Richard", "Robert", "Sarah",
+        "Seoyeon", "Shizhe", "Sipho", "Sofia", "Sofia", "Sof\u00eda", "Steven",
+        "Susan", "Thabo", "Thomas", "Tunde", "Wei", "William", "Yan",
+        "Yuchen", "Yuki",
     }
 )
 
 LAST_NAMES = frozenset(
     {
-        "Adams", "Allen", "Anderson", "Ali", "Baker", "Brown", "Campbell",
-        "Carter", "Chen", "Choi", "Clark", "Costa", "Davis", "Flores",
-        "Garcia", "Gonzalez", "Green", "Hall", "Harris", "Hernandez", "Hill",
-        "Huang", "Jackson", "Johnson", "Jones", "Khan", "Kim", "King", "Kowalski",
-        "Kumar", "Lee", "Lewis", "Li", "Liu", "Lopez", "Martin", "Martinez",
-        "Miller", "Mitchell", "Moore", "Muller", "Nelson", "Ng", "Nguyen",
-        "Park", "Patel", "Perez", "Ramirez", "Rivera", "Roberts", "Robinson",
-        "Rodriguez", "Rossi", "Sanchez", "Santos", "Schmidt", "Scott", "Shah",
-        "Silva", "Singh", "Smith", "Taylor", "Thompson", "Torres", "Walker",
-        "Wang", "White", "Williams", "Wilson", "Wong", "Wright", "Wu", "Yang",
-        "Young", "Zhang", "Zhao", "Zhou",
+        "Adams", "Adeyemi", "Ali", "Allen", "Anderson", "Baker", "Bernard",
+        "Brown", "Campbell", "Carter", "Chen", "Choi", "Clark", "Costa",
+        "Davis", "Demir", "Dlamini", "Dubois", "Ferrari", "Flores", "Garcia",
+        "Garc\u00eda", "Gonzalez", "Gonz\u00e1lez", "Green", "Hall", "Harris",
+        "Hernandez", "Hern\u00e1ndez", "Hill", "Huang", "Ivanov", "Jackson",
+        "Johnson", "Jones", "Kaya", "Khan", "Kim", "King", "Kowalski", "Kumar",
+        "Lee", "Lewis", "Li", "Liang", "Lim", "Liu", "Lopez", "L\u00f3pez",
+        "Martin", "Martinez", "Miller", "Mitchell", "Mokoena", "Moore",
+        "Muller", "M\u00fcller", "Nelson", "Ng", "Nguyen", "Nkosi", "Nwosu",
+        "Okafor", "Oliveira", "Park", "Patel", "Perez", "Petrov", "Pham",
+        "Ramirez", "Rivera", "Roberts", "Robinson", "Rodriguez", "Romano",
+        "Rossi", "Sanchez", "Santos", "Sato", "Schmidt", "Scott", "Shah",
+        "Sharma", "Silva", "Singh", "Smirnova", "Smith", "Suzuki", "Tan",
+        "Tanaka", "Taylor", "Thomas", "Thompson", "Torres", "Tran", "Walker",
+        "Wang", "Weber", "White", "Williams", "Wilson", "Wong", "Wright", "Wu",
+        "Yang", "Y\u0131lmaz", "Yilmaz", "Young", "Zhang", "Zhao", "Zhou",
     }
 )
 
 _EMAIL_RE = re.compile(
     r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}"
 )
-# Zero-width lookahead so that "Ask John Smith" still finds "John Smith".
 # "git@github.com:org/repo.git" is an SSH remote, not an email address.
 _SSH_REMOTE_RE = re.compile(r":[^\s:]")
-_NAME_RE = re.compile(r"(?=\b([A-Z][a-z]+) ([A-Z][a-z]+)\b)")
+# One capitalized word. Covers Latin letters with accents (Mueller, Garcia,
+# Yilmaz and so on).
+_UPPER = r"A-Z\u00c0-\u00d6\u00d8-\u00de\u0100-\u017f"
+_LOWER = r"a-z\u00df-\u00f6\u00f8-\u00ff\u0100-\u017f"
+_WORD_RE = re.compile(rf"(?<!\w)[{_UPPER}][{_LOWER}]+(?!\w)")
 # Digits with common separators. Candidates are checked by _is_phone.
 _PHONE_CANDIDATE_RE = re.compile(r"(?<![\w.+-])\+?\(?\d(?:[\d\s().-]*\d)?(?!\w)")
 _DATE_RE = re.compile(
@@ -82,6 +101,33 @@ def _is_phone(candidate: str) -> bool:
     return True
 
 
+def _find_names(text: str) -> list[tuple[int, int, str]]:
+    """Find known ``First Last`` and ``First Middle Last`` name sequences."""
+    words = [(m.start(), m.end(), m.group()) for m in _WORD_RE.finditer(text)]
+    found: list[tuple[int, int, str]] = []
+    index = 0
+    while index < len(words):
+        s0, e0, w0 = words[index]
+        if w0 in FIRST_NAMES and index + 1 < len(words):
+            s1, e1, w1 = words[index + 1]
+            if text[e0:s1] == " ":
+                if (
+                    w1 in FIRST_NAMES
+                    and index + 2 < len(words)
+                    and text[e1:words[index + 2][0]] == " "
+                    and words[index + 2][2] in LAST_NAMES
+                ):
+                    found.append((s0, words[index + 2][1], PERSONAL_NAME))
+                    index += 3
+                    continue
+                if w1 in LAST_NAMES:
+                    found.append((s0, e1, PERSONAL_NAME))
+                    index += 2
+                    continue
+        index += 1
+    return found
+
+
 def find_personal_data(text: str) -> list[PersonalDataFinding]:
     """Return ordered, non-overlapping personal-data findings in ``text``."""
     if not isinstance(text, str):
@@ -92,12 +138,7 @@ def find_personal_data(text: str) -> list[PersonalDataFinding]:
         for match in _EMAIL_RE.finditer(text)
         if not _SSH_REMOTE_RE.match(text, match.end())
     ]
-    for match in _NAME_RE.finditer(text):
-        first, last = match.group(1), match.group(2)
-        if first in FIRST_NAMES and last in LAST_NAMES:
-            start = match.start()
-            end = start + len(first) + 1 + len(last)
-            candidates.append((start, end, PERSONAL_NAME))
+    candidates.extend(_find_names(text))
     for match in _PHONE_CANDIDATE_RE.finditer(text):
         if _is_phone(match.group(0)):
             candidates.append((match.start(), match.end(), PHONE))
