@@ -25,6 +25,7 @@ from .tokenizer import (
     WindowResult,
     get_default_tokenizer,
 )
+from .personal_data import PersonalDataFinding, find_personal_data
 from .secrets import SecretFinding, SecretScanner
 
 __all__ = [
@@ -35,6 +36,7 @@ __all__ = [
     "OptimizationResult",
     "OptimizationStats",
     "SegmentLog",
+    "PersonalDataFinding",
     "SecretFinding",
     "SecretScanner",
     "TrimStats",
