@@ -18,6 +18,53 @@ class PersonalDataTests(unittest.TestCase):
             [("EMAIL", "john.doe+work@example.co.uk")],
         )
 
+    def test_email_domains_from_many_providers_and_institutions(self) -> None:
+        domains = (
+            "gmail.com outlook.com hotmail.com yahoo.com icloud.com qq.com "
+            "163.com 126.com foxmail.com proton.me tuta.com gmx.com odu.edu "
+            "mit.edu stanford.edu harvard.edu ox.ac.uk cam.ac.uk utoronto.ca "
+            "nus.edu.sg tsinghua.edu.cn pku.edu.cn amd.com nvidia.com "
+            "intel.com microsoft.com google.com amazon.com meta.com ibm.com "
+            "oracle.com cisco.com qualcomm.com arm.com dell.com hpe.com "
+            "openai.com anthropic.com huggingface.co github.com gitlab.com "
+            "cloudflare.com databricks.com snowflake.com digitalocean.com "
+            "canonical.com nasa.gov cern.ch esa.int nsf.gov ornl.gov lbl.gov "
+            "anl.gov"
+        ).split()
+        for domain in domains:
+            for local in ("jane.doe", "j_doe+test", "student123"):
+                address = f"{local}@{domain}"
+                with self.subTest(address=address):
+                    self.assertEqual(
+                        _spans(f"Mail {address}, thanks"), [("EMAIL", address)]
+                    )
+
+    def test_email_surrounded_by_punctuation_and_case(self) -> None:
+        self.assertEqual(
+            _spans("Mail <jane.doe@ox.ac.uk>."), [("EMAIL", "jane.doe@ox.ac.uk")]
+        )
+        self.assertEqual(
+            _spans("mailto:jane@mit.edu?subject=x"), [("EMAIL", "jane@mit.edu")]
+        )
+        self.assertEqual(
+            _spans("JANE.DOE@GMAIL.COM"), [("EMAIL", "JANE.DOE@GMAIL.COM")]
+        )
+        self.assertEqual(
+            _spans("jane@163.com,bob@126.com"),
+            [("EMAIL", "jane@163.com"), ("EMAIL", "bob@126.com")],
+        )
+
+    def test_incomplete_addresses_and_ssh_remotes_are_ignored(self) -> None:
+        for text in (
+            "a@b",
+            "@gmail.com",
+            "user@@gmail.com",
+            "x@127.0.0.1",
+            "git clone git@github.com:org/repo.git",
+        ):
+            with self.subTest(text=text):
+                self.assertEqual(_spans(text), [])
+
     def test_known_first_and_last_name_pair_is_detected(self) -> None:
         self.assertEqual(
             _spans("Ask John Smith about it."),

@@ -47,6 +47,8 @@ _EMAIL_RE = re.compile(
     r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}"
 )
 # Zero-width lookahead so that "Ask John Smith" still finds "John Smith".
+# "git@github.com:org/repo.git" is an SSH remote, not an email address.
+_SSH_REMOTE_RE = re.compile(r":[^\s:]")
 _NAME_RE = re.compile(r"(?=\b([A-Z][a-z]+) ([A-Z][a-z]+)\b)")
 # Digits with common separators. Candidates are checked by _is_phone.
 _PHONE_CANDIDATE_RE = re.compile(r"(?<![\w.+-])\+?\(?\d(?:[\d\s().-]*\d)?(?!\w)")
@@ -86,7 +88,9 @@ def find_personal_data(text: str) -> list[PersonalDataFinding]:
         raise TypeError("text must be a string")
 
     candidates: list[tuple[int, int, str]] = [
-        (match.start(), match.end(), EMAIL) for match in _EMAIL_RE.finditer(text)
+        (match.start(), match.end(), EMAIL)
+        for match in _EMAIL_RE.finditer(text)
+        if not _SSH_REMOTE_RE.match(text, match.end())
     ]
     for match in _NAME_RE.finditer(text):
         first, last = match.group(1), match.group(2)
