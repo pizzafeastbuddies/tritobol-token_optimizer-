@@ -178,6 +178,24 @@ class PersonalDataTests(unittest.TestCase):
                         _spans(f"Call {number} now"), [("PHONE", number)]
                     )
 
+    def test_number_lists_sizes_and_isbn_are_not_phones(self) -> None:
+        for text in (
+            "Values 10 20 30 40 50 60 70",
+            "Values 10-20-30-40-50-60-70",
+            "Sizes 1024 768 and 640",
+            "Scores: 1234 5678 9012",
+            "ISBN 978-3-16-148410-0",
+            "Prices 12.50 13.75 14.20 15.00",
+        ):
+            with self.subTest(text=text):
+                self.assertEqual(_spans(text), [])
+
+    def test_two_phones_in_one_sentence(self) -> None:
+        self.assertEqual(
+            _spans("Call 415-555-0132 or 415-555-0133"),
+            [("PHONE", "415-555-0132"), ("PHONE", "415-555-0133")],
+        )
+
     def test_bare_ids_and_counters_are_not_phones(self) -> None:
         for text in (
             "Order 12345678 shipped",

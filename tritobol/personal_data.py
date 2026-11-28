@@ -47,6 +47,7 @@ _DATE_RE = re.compile(
     r"\d{4}[-./]\d{1,2}[-./]\d{1,2}|\d{1,2}[-./]\d{1,2}[-./]\d{2,4}"
 )
 _VERSION_OR_IP_RE = re.compile(r"\d{1,3}(?:\.\d{1,3}){2,}")
+_ISBN_RE = re.compile(r"97[89][- ]\d[- ]\d+[- ]\d+[- ]\d")
 
 
 @dataclass(frozen=True)
@@ -70,6 +71,17 @@ def _is_phone(candidate: str) -> bool:
     # 8-digit numbers such as Singapore's are not detected.
     if text.isdigit() and len(text) < 10 and not text.startswith("0"):
         return False
+    if _ISBN_RE.fullmatch(text):
+        return False
+    # Without a "+", "(" or leading 0, the number must look like a phone:
+    # not a long list of 1-2 digit values and not a space-only digit run of
+    # an unusual length (sizes, scores, card or account numbers).
+    if not text.startswith(("+", "(", "0")):
+        groups = re.findall(r"\d+", text)
+        if len(groups) > 5 and all(len(group) <= 2 for group in groups):
+            return False
+        if not re.search(r"[^\d\s]", text) and not 8 <= digit_count <= 11:
+            return False
     return True
 
 
