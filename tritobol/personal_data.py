@@ -10,54 +10,26 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from importlib import resources
 
 EMAIL = "EMAIL"
 PHONE = "PHONE"
 PERSONAL_NAME = "PERSONAL_NAME"
 
-# Starter lists. Names are capitalized, as they appear in text. Accented names
-# use \u escapes so the file stays ASCII; the unaccented spelling is included
-# because people often drop accents.
-FIRST_NAMES = frozenset(
-    {
-        "Adaeze", "Ahmed", "Aiden", "Alejandro", "Alexander", "Ali", "Amit",
-        "Andrew", "Anh", "Anna", "Anthony", "Aoi", "Arjun", "Ashley", "Ava",
-        "Barbara", "Charles", "Charlotte", "Chen", "Chinedu", "Daniel", "David",
-        "Diego", "Dmitry", "Donald", "Duc", "Elif", "Elizabeth", "Emily", "Emir",
-        "Emma", "Ethan", "Felix", "Gabriel", "Grace", "Hannah", "Harry",
-        "Haruto", "Hugo", "Hui", "Jack", "James", "Jennifer", "Jessica", "Jia",
-        "Jiho", "Joao", "Jo\u00e3o", "John", "Joseph", "Joshua", "Jun", "Karen",
-        "Kenneth", "Li", "Liam", "Linda", "Lisa", "Louis", "Luca", "Lucas",
-        "Lucia", "Lukas", "Maria", "Mark", "Marco", "Mary", "Mateo", "Matthew",
-        "Mehmet", "Mei", "Mia", "Michael", "Ming", "Minh", "Minjun", "Mohammed",
-        "Nancy", "Naledi", "Noah", "Oliver", "Olivia", "Pablo", "Patricia",
-        "Paul", "Priya", "Raj", "Rahul", "Richard", "Robert", "Sarah",
-        "Seoyeon", "Shizhe", "Sipho", "Sofia", "Sofia", "Sof\u00eda", "Steven",
-        "Susan", "Thabo", "Thomas", "Tunde", "Wei", "William", "Yan",
-        "Yuchen", "Yuki",
-    }
-)
 
-LAST_NAMES = frozenset(
-    {
-        "Adams", "Adeyemi", "Ali", "Allen", "Anderson", "Baker", "Bernard",
-        "Brown", "Campbell", "Carter", "Chen", "Choi", "Clark", "Costa",
-        "Davis", "Demir", "Dlamini", "Dubois", "Ferrari", "Flores", "Garcia",
-        "Garc\u00eda", "Gonzalez", "Gonz\u00e1lez", "Green", "Hall", "Harris",
-        "Hernandez", "Hern\u00e1ndez", "Hill", "Huang", "Ivanov", "Jackson",
-        "Johnson", "Jones", "Kaya", "Khan", "Kim", "King", "Kowalski", "Kumar",
-        "Lee", "Lewis", "Li", "Liang", "Lim", "Liu", "Lopez", "L\u00f3pez",
-        "Martin", "Martinez", "Miller", "Mitchell", "Mokoena", "Moore",
-        "Muller", "M\u00fcller", "Nelson", "Ng", "Nguyen", "Nkosi", "Nwosu",
-        "Okafor", "Oliveira", "Park", "Patel", "Perez", "Petrov", "Pham",
-        "Ramirez", "Rivera", "Roberts", "Robinson", "Rodriguez", "Romano",
-        "Rossi", "Sanchez", "Santos", "Sato", "Schmidt", "Scott", "Shah",
-        "Sharma", "Silva", "Singh", "Smirnova", "Smith", "Suzuki", "Tan",
-        "Tanaka", "Taylor", "Thomas", "Thompson", "Torres", "Tran", "Walker",
-        "Wang", "Weber", "White", "Williams", "Wilson", "Wong", "Wright", "Wu",
-        "Yang", "Y\u0131lmaz", "Yilmaz", "Young", "Zhang", "Zhao", "Zhou",
-    }
-)
+def _load_names(filename: str) -> frozenset[str]:
+    """Read one capitalized name per line from the bundled ``data`` folder."""
+    text = (
+        resources.files("tritobol")
+        .joinpath("data", filename)
+        .read_text(encoding="utf-8")
+    )
+    return frozenset(line.strip() for line in text.splitlines() if line.strip())
+
+
+# Starter lists in tritobol/data/. Add a name by adding a line to the file.
+FIRST_NAMES = _load_names("first_names.txt")
+LAST_NAMES = _load_names("last_names.txt")
 
 _EMAIL_RE = re.compile(
     r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}"

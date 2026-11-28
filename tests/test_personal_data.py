@@ -71,6 +71,15 @@ class PersonalDataTests(unittest.TestCase):
             [("PERSONAL_NAME", "John Smith")],
         )
 
+    def test_name_lists_load_from_bundled_data_files(self) -> None:
+        from tritobol import personal_data
+
+        self.assertIn("John", personal_data.FIRST_NAMES)
+        self.assertIn("Smith", personal_data.LAST_NAMES)
+        self.assertIn("M\u00fcller", personal_data.LAST_NAMES)
+        self.assertNotIn("", personal_data.FIRST_NAMES)
+        self.assertNotIn("", personal_data.LAST_NAMES)
+
     def test_sample_names_by_country(self) -> None:
         samples = {
             "CN": ["Shizhe Liang", "Wei Zhang", "Yuchen Wang"],

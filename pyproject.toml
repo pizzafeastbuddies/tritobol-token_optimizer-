@@ -35,4 +35,4 @@ where = ["."]
 include = ["tritobol", "tritobol.*"]
 
 [tool.setuptools.package-data]
-tritobol = ["data/*.json", "data/*.md", "data/LICENSE*"]
+tritobol = ["data/*.json", "data/*.md", "data/*.txt", "data/LICENSE*"]
